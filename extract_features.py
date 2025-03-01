@@ -31,6 +31,8 @@ import argparse
 import logging
 import os
 from TNBC_dataset import TNBCDataset
+# MammoLesions
+from MammoLesions_dataset import MammoLesionsDataset
 from models import DiT_models
 from diffusion import create_diffusion
 from diffusers.models import AutoencoderKL
@@ -146,25 +148,28 @@ def main(args):
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True)
     ])
-    if 'imagenet' in args.data_path:
-        dataset = ImageFolder(args.data_path, transform=transform)
-    elif 'RetinaMNIST' in args.data_path:
-        train_transform = transforms.Compose([
-            transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, args.image_size)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    #if 'imagenet' in args.data_path:
+    #    dataset = ImageFolder(args.data_path, transform=transform)
+    #elif 'RetinaMNIST' in args.data_path:
+    #    train_transform = transforms.Compose([
+    #        transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, args.image_size)),
+    #        transforms.ToTensor(),
+    #        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    #
+    #    ])
 
-        ])
+    #    dataset = RetinaMNIST(root=args.data_path, as_rgb=True, transform=train_transform, size=224,
+    #                          download=True,
+    #                          split='train',
+    #                          target_transform=transforms.Compose([
+    #                              lambda x: torch.LongTensor(x),  # or just torch.tensor
+    #                              lambda x: F.one_hot(x, args.num_classes)])
+    #                          )
+    #elif 'TNBC' in args.data_path or 'oct' in args.data_path:
+    #    dataset = TNBCDataset(args.data_path, transform=transform, mode='train', fold=args.fold)
 
-        dataset = RetinaMNIST(root=args.data_path, as_rgb=True, transform=train_transform, size=224,
-                              download=True,
-                              split='train',
-                              target_transform=transforms.Compose([
-                                  lambda x: torch.LongTensor(x),  # or just torch.tensor
-                                  lambda x: F.one_hot(x, args.num_classes)])
-                              )
-    elif 'TNBC' in args.data_path or 'oct' in args.data_path:
-        dataset = TNBCDataset(args.data_path, transform=transform, mode='train', fold=args.fold)
+    if "lesions_png" in args.data_path:
+        dataset = MammoLesionsDataset(root=args.data_path, mode='train', transform=transform)
 
     sampler = DistributedSampler(
         dataset,
