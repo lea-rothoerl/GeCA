@@ -188,6 +188,11 @@ def main(args):
         drop_last=True
     )
 
+    # DEBUG
+    for x, y in loader:
+        print(f"Loaded batch - x shape: {x.shape}, y shape: {y.shape}")  # Debug print
+    # DEBUG
+
     train_steps = 0
     for x, y in loader:
         x = x.to(device)
