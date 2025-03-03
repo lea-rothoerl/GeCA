@@ -117,10 +117,17 @@ def main(args):
     """
     Trains a new DiT model.
     """
+
     assert torch.cuda.is_available(), "Training currently requires at least one GPU."
 
+    # DEBUG
+    print(f"Data path: {args.data_path}")
+    print(f"Full path for training images: {os.path.join(args.data_path, 'training')}")
+    # DEBUG
+
     # Setup DDP:
-    dist.init_process_group("nccl")
+    # DEBUG MOD
+    dist.init_process_group("nccl", rank=0, world_size=1)
     assert args.global_batch_size % dist.get_world_size() == 0, f"Batch size must be divisible by world size."
     rank = dist.get_rank()
     device = rank % torch.cuda.device_count()

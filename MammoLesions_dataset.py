@@ -14,7 +14,10 @@ class MammoLesionsDataset(Dataset):
         self.transform = transform
         
         # get all PNG files in the folder
+        print(f"Looking for images in: {os.path.join(root, mode, '*.png')}")
         self.image_paths = glob(os.path.join(root, mode, '*.png'))
+        print(f"Found {len(self.image_paths)} images.")
+
 
     def __getitem__(self, idx):
         img_path = self.image_paths[idx]
