@@ -209,3 +209,5 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt-every", type=int, default=50_000)
     args = parser.parse_args()
     main(args)
+
+#CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --data-path /home/lea_urv/lesions_png/ --features-path /home/lea_urv/lesions_features/training/ --global-batch-size 128 --fold 0

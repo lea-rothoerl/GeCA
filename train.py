@@ -11,7 +11,9 @@ import torch
 from medmnist.dataset import RetinaMNIST
 
 from TNBC_dataset import TNBCDataset
-from download import find_model
+# MammoLesions
+from MammoLesions_dataset import MammoLesionsDataset
+#from download import find_model
 
 # the first flag below was False when we tested this script but True makes A100 training a lot faster:
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -208,35 +210,8 @@ def main(args):
     # Setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
     opt = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0)
 
-    if 'MNIST' in args.data_path:
-        transform = transforms.Compose([
-            transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, args.image_size)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-
-        ])
-    else:
-        transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, args.image_size)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-
-        ])
-
-    if 'imagenet' in args.data_path:
-        val_dataset = ImageFolder(args.data_path, transform=transform)
-    elif 'RetinaMNIST' in args.data_path:
-        val_dataset = RetinaMNIST(root=args.data_path, as_rgb=True, transform=transform, size=224,
-                                  download=True,
-                                  split='val',
-                                  target_transform=transforms.Compose([
-                                      lambda x: torch.LongTensor(x),  # or just torch.tensor
-                                      lambda x: F.one_hot(x, args.num_classes)])
-                                  )
-
-    elif 'TNBC' in args.data_path or 'oct' in args.data_path:
-        val_dataset = TNBCDataset(args.data_path, transform=transform, mode='val', fold=args.fold)
+    if 'lesions_png' in args.data_path:  
+        val_dataset = MammoLesionsDataset(root=args.data_path, mode='test')
 
     val_dl = DataLoader(val_dataset, batch_size=int(args.val_samples // accelerator.num_processes),
                         num_workers=args.num_workers,
