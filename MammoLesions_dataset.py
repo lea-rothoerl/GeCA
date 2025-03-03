@@ -1,6 +1,6 @@
 import copy
 import os
-import glob
+from glob import glob
 from pathlib import Path
 import cv2
 import torch
