@@ -106,42 +106,42 @@ def center_crop_arr(pil_image, image_size):
 
 
 class CustomDataset(Dataset):
-    def __init__(self, features_dir, labels_dir, cache=False):
+    def __init__(self, features_dir, cache=False): #labels_dir, cache=False):
         self.features_dir = features_dir
-        self.labels_dir = labels_dir
+        #self.labels_dir = labels_dir
 
         self.features_files = sorted(os.listdir(features_dir))
-        self.labels_files = sorted(os.listdir(labels_dir))
+        #self.labels_files = sorted(os.listdir(labels_dir))
         self.cache_dict = {}
         self.cache = cache
         if cache:
             for idx in range(len(self.features_files)):
                 feature_file = self.features_files[idx]
-                label_file = self.labels_files[idx]
+            #    label_file = self.labels_files[idx]
                 features = np.load(os.path.join(self.features_dir, feature_file))
-                labels = np.load(os.path.join(self.labels_dir, label_file))
-                self.cache_dict[idx] = (features, labels)
+            #    labels = np.load(os.path.join(self.labels_dir, label_file))
+                self.cache_dict[idx] = (features) #, labels)
 
     def __len__(self):
-        assert len(self.features_files) == len(self.labels_files), \
-            "Number of feature files and label files should be same"
+        #assert len(self.features_files) == len(self.labels_files), \
+        #    "Number of feature files and label files should be same"
         return len(self.features_files)
 
     def __getitem__(self, idx):
         if self.cache:
             if idx in self.cache_dict:
-                features, labels = self.cache_dict[idx]
+                features = self.cache_dict[idx] #, labels = self.cache_dict[idx]
             else:
                 raise Exception('Cache no initalized properly')
 
         else:
             feature_file = self.features_files[idx]
-            label_file = self.labels_files[idx]
+           #label_file = self.labels_files[idx]
 
             features = np.load(os.path.join(self.features_dir, feature_file))
-            labels = np.load(os.path.join(self.labels_dir, label_file))
+            #labels = np.load(os.path.join(self.labels_dir, label_file))
 
-        return torch.from_numpy(features), torch.from_numpy(labels)
+        return torch.from_numpy(features)#, torch.from_numpy(labels)
 
 
 #################################################################################
@@ -251,8 +251,8 @@ def main(args):
 
     if not args.image_space:
         features_dir = f"{args.feature_path}/features_{args.fold}"
-        labels_dir = f"{args.feature_path}/labels_{args.fold}"
-        dataset = CustomDataset(features_dir, labels_dir, cache=args.cache)
+        #labels_dir = f"{args.feature_path}/labels_{args.fold}"
+        dataset = CustomDataset(features_dir, cache=args.cache) #labels_dir, cache=args.cache)
     else:
         train_transform = transforms.Compose([
             transforms.ToPILImage(),
