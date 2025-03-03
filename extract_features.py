@@ -120,14 +120,8 @@ def main(args):
 
     assert torch.cuda.is_available(), "Training currently requires at least one GPU."
 
-    # DEBUG
-    print(f"Data path: {args.data_path}")
-    print(f"Full path for training images: {os.path.join(args.data_path, 'training')}")
-    # DEBUG
-
     # Setup DDP:
-    # DEBUG MOD
-    dist.init_process_group("nccl", rank=0, world_size=1)
+    dist.init_process_group("nccl")
     assert args.global_batch_size % dist.get_world_size() == 0, f"Batch size must be divisible by world size."
     rank = dist.get_rank()
     device = rank % torch.cuda.device_count()
@@ -155,25 +149,6 @@ def main(args):
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True)
     ])
-    #if 'imagenet' in args.data_path:
-    #    dataset = ImageFolder(args.data_path, transform=transform)
-    #elif 'RetinaMNIST' in args.data_path:
-    #    train_transform = transforms.Compose([
-    #        transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, args.image_size)),
-    #        transforms.ToTensor(),
-    #        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-    #
-    #    ])
-
-    #    dataset = RetinaMNIST(root=args.data_path, as_rgb=True, transform=train_transform, size=224,
-    #                          download=True,
-    #                          split='train',
-    #                          target_transform=transforms.Compose([
-    #                              lambda x: torch.LongTensor(x),  # or just torch.tensor
-    #                              lambda x: F.one_hot(x, args.num_classes)])
-    #                          )
-    #elif 'TNBC' in args.data_path or 'oct' in args.data_path:
-    #    dataset = TNBCDataset(args.data_path, transform=transform, mode='train', fold=args.fold)
 
     if "lesions_png" in args.data_path:
         dataset = MammoLesionsDataset(root=args.data_path, mode='train', transform=transform)
@@ -195,16 +170,11 @@ def main(args):
         drop_last=True
     )
 
-    # DEBUG
-    for x, y in loader:
-        print(f"Loaded batch - x shape: {x.shape}, y shape: {y.shape}")  # Debug print
-    # DEBUG
-
     train_steps = 0
-    for x, y in loader:
+    for x in loader:
         x = x.to(device)
-        y = y.to(device)
-        y = y.squeeze(dim=1)  # B X n_class
+    #    y = y.to(device)
+    #    y = y.squeeze(dim=1)  # B X n_class
         with torch.no_grad():
             # Map input images to latent space + normalize latents:
             x = vae.encode(x).latent_dist.sample().mul_(0.18215)
@@ -212,8 +182,8 @@ def main(args):
         x = x.detach().cpu().numpy()  # (1, 4, 32, 32)
         np.save(f'{args.features_path}/features_{args.fold}/{train_steps}.npy', x)
 
-        y = y.detach().cpu().numpy()  # (1,n_class)
-        np.save(f'{args.features_path}/labels_{args.fold}/{train_steps}.npy', y)
+    #    y = y.detach().cpu().numpy()  # (1,n_class)
+    #    np.save(f'{args.features_path}/labels_{args.fold}/{train_steps}.npy', y)
 
         train_steps += 1
         print(train_steps)
