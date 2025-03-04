@@ -171,10 +171,10 @@ def main(args):
     )
 
     train_steps = 0
-    for x in loader:
+    for x, y in loader:
         x = x.to(device)
-    #    y = y.to(device)
-    #    y = y.squeeze(dim=1)  # B X n_class
+        y = y.to(device)
+        y = y.squeeze(dim=1)  # B X n_class
         with torch.no_grad():
             # Map input images to latent space + normalize latents:
             x = vae.encode(x).latent_dist.sample().mul_(0.18215)
@@ -182,8 +182,8 @@ def main(args):
         x = x.detach().cpu().numpy()  # (1, 4, 32, 32)
         np.save(f'{args.features_path}/features_{args.fold}/{train_steps}.npy', x)
 
-    #    y = y.detach().cpu().numpy()  # (1,n_class)
-    #    np.save(f'{args.features_path}/labels_{args.fold}/{train_steps}.npy', y)
+        y = y.detach().cpu().numpy()  # (1,n_class)
+        np.save(f'{args.features_path}/labels_{args.fold}/{train_steps}.npy', y)
 
         train_steps += 1
         print(train_steps)
@@ -209,3 +209,5 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt-every", type=int, default=50_000)
     args = parser.parse_args()
     main(args)
+
+#CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --data-path /home/lea_urv/lesions_png/ --features-path /home/lea_urv/lesions_features/training/ --global-batch-size 128 --fold 0
