@@ -11,6 +11,7 @@ import torch
 from medmnist.dataset import RetinaMNIST
 
 from TNBC_dataset import TNBCDataset
+from MammoLesions_dataset import MammoLesionsDataset
 #from download import find_model
 
 # the first flag below was False when we tested this script but True makes A100 training a lot faster:
@@ -238,6 +239,10 @@ def main(args):
     elif 'TNBC' in args.data_path or 'oct' in args.data_path:
         val_dataset = TNBCDataset(args.data_path, transform=transform, mode='val', fold=args.fold)
 
+    if 'lesions_png' in args.data_path:  
+        val_dataset = MammoLesionsDataset(root=args.data_path, transform=transform, mode='test')
+
+
     val_dl = DataLoader(val_dataset, batch_size=int(args.val_samples // accelerator.num_processes),
                         num_workers=args.num_workers,
                         sampler=None, drop_last=True, shuffle=True, pin_memory=False)
@@ -414,6 +419,7 @@ def main(args):
 
                 if 'GeCA' in args.model:
                     model_kwargs['extras'] = model.module.seed(z, [latent_size, latent_size])
+                    #model_kwargs['extras'] = model.seed(z, [latent_size, latent_size])
 
                 sample_fn = model.forward
                 #
@@ -513,3 +519,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args)
+
+# CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/lesions_features/training --global-batch-size 64 --epochs 100 --fold 0 --validate_every 700 --data-path /home/lea_urv/lesions_png/ --results-dir ../results_lesions_GeCA/
