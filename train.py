@@ -11,7 +11,7 @@ import torch
 from medmnist.dataset import RetinaMNIST
 
 from TNBC_dataset import TNBCDataset
-from download import find_model
+#from download import find_model
 
 # the first flag below was False when we tested this script but True makes A100 training a lot faster:
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -229,7 +229,7 @@ def main(args):
     elif 'RetinaMNIST' in args.data_path:
         val_dataset = RetinaMNIST(root=args.data_path, as_rgb=True, transform=transform, size=224,
                                   download=True,
-                                  split='val',
+                                  split='test',
                                   target_transform=transforms.Compose([
                                       lambda x: torch.LongTensor(x),  # or just torch.tensor
                                       lambda x: F.one_hot(x, args.num_classes)])
