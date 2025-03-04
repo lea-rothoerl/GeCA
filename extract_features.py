@@ -173,10 +173,11 @@ def main(args):
     train_steps = 0
     for x, y in loader:
         x = x.to(device)
-        y = y.to(device)
-        y = y.squeeze(dim=1)  # B X n_class
+        
+        y = torch.tensor(y, dtype=torch.float32).to(device)
+        if y.ndim > 1:  
+            y = y.squeeze(dim=1) 
         with torch.no_grad():
-            # Map input images to latent space + normalize latents:
             x = vae.encode(x).latent_dist.sample().mul_(0.18215)
 
         x = x.detach().cpu().numpy()  # (1, 4, 32, 32)
