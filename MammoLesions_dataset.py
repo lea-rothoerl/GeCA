@@ -1,4 +1,3 @@
-import copy
 import os
 from glob import glob
 from pathlib import Path
@@ -24,7 +23,13 @@ class MammoLesionsDataset(Dataset):
 
         # Create a mapping of image_id to finding_categories
         self.label_dict = self._create_label_mapping()
-    
+        
+        # Create a list of all unique labels
+        self.all_labels = sorted(list(set([label for sublist in self.label_dict.values() for label in sublist])))
+        self.label_to_index = {label: idx for idx, label in enumerate(self.all_labels)}  # Label to index mapping
+
+        print(f"All unique labels: {self.all_labels}")
+
     def _create_label_mapping(self):
         """
         Creates a dictionary mapping image IDs to their corresponding labels.
@@ -46,9 +51,20 @@ class MammoLesionsDataset(Dataset):
         """
         labels = []
         for img_path in self.image_paths:
-            img_id = Path(img_path).stem  # Get filename without extension
-            labels.append(self.label_dict.get(img_id, []))  # Default to empty list if not found
-
+            # Extract the image_id by removing "_lesion_{idx}" suffix from filename
+            img_id = Path(img_path).stem.split('_lesion')[0]  
+            
+            # Get the labels for the image_id
+            label_strings = self.label_dict.get(img_id, [])
+            
+            # Create the one-hot encoded label vector
+            one_hot_label = [0] * len(self.all_labels)  # Initialize a vector of zeros
+            for label in label_strings:
+                if label in self.label_to_index:  # Ensure label is in our defined set
+                    one_hot_label[self.label_to_index[label]] = 1  # Set the corresponding index to 1
+            
+            labels.append(one_hot_label)
+        
         return labels
 
     def __getitem__(self, idx):
@@ -59,11 +75,22 @@ class MammoLesionsDataset(Dataset):
         if self.transform:
             img = self.transform(img)
 
-        # Extract label
-        img_id = Path(img_path).stem
-        label = self.label_dict.get(img_id, [])  # Default to empty list if not found
+        # Extract the image_id by removing "_lesion_{idx}" suffix from filename
+        img_id = Path(img_path).stem.split('_lesion')[0]  
+
+        # Get the labels for the image_id
+        label_strings = self.label_dict.get(img_id, [])
         
-        return img, label
+        # Create the one-hot encoded label vector
+        one_hot_label = [0] * len(self.all_labels)  # Initialize a vector of zeros
+        for label in label_strings:
+            if label in self.label_to_index:  # Ensure label is in our defined set
+                one_hot_label[self.label_to_index[label]] = 1  # Set the corresponding index to 1
+
+        # DEBUG: Print image ID and label vector
+        print(f"Image ID: {img_id}, One-hot Label: {one_hot_label}")
+
+        return img, torch.tensor(one_hot_label, dtype=torch.float32)
 
     def __len__(self):
         return len(self.image_paths)
