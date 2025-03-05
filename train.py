@@ -288,6 +288,9 @@ def main(args):
             dataset = TNBCDataset(args.data_path, transform=train_transform, mode='train', fold=args.fold,
                                   cache=args.cache)
 
+        if 'lesions_png' in args.data_path:  
+            dataset = MammoLesionsDataset(root=args.data_path, transform=train_transform, mode='train')
+
     loader = DataLoader(
         dataset,
         batch_size=int(args.global_batch_size // accelerator.num_processes),

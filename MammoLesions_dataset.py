@@ -88,7 +88,7 @@ class MammoLesionsDataset(Dataset):
                 one_hot_label[self.label_to_index[label]] = 1  # Set the corresponding index to 1
 
         # DEBUG: Print image ID and label vector
-        print(f"Image ID: {img_id}, One-hot Label: {one_hot_label}")
+        #print(f"Image ID: {img_id}, One-hot Label: {one_hot_label}")
 
         return img, torch.tensor(one_hot_label, dtype=torch.float32)
 
