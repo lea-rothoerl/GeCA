@@ -26,7 +26,7 @@ class MammoLesionsDataset(Dataset):
         
         # Create a list of all unique labels
         self.all_labels = sorted(list(set([label for sublist in self.label_dict.values() for label in sublist])))
-        self.label_to_index = {label: idx for idx, label in enumerate(self.all_labels)}  # Label to index mapping
+        self.label_to_index = {label: idx for idx, label in enumerate(self.all_labels)} 
 
         print(f"All unique labels: {self.all_labels}")
 
