@@ -24,7 +24,7 @@ import torch.distributed as dist
 
 from extract_features import center_crop_arr
 from models import DiT_models
-from download import find_model
+#from download import find_model
 from diffusion import create_diffusion
 from diffusers.models import AutoencoderKL
 from tqdm import tqdm
@@ -37,6 +37,8 @@ import pandas as pd
 
 from torchvision import transforms
 import torch.nn.functional as F
+
+from MammoLesions_dataset import MammoLesionsDataset
 
 def create_npz_from_sample_folder(sample_dir, num=50_000):
     """
@@ -55,40 +57,42 @@ def create_npz_from_sample_folder(sample_dir, num=50_000):
     return npz_path
 
 
+
 class CustomDataset(Dataset):
     def __init__(self, labels_dir, mode='train', fold=0, multi_class=False):
 
         self.datapath = Path(labels_dir)
 
-        self.dataset_path = self.datapath / f'{mode}_{fold}.csv'
-        if not self.dataset_path.exists():
-            raise Exception(f"{self.dataset_path} could not be found")
-        self.dataset = pd.read_csv(self.dataset_path, index_col=0)
-        self.multi_class = multi_class
-        # self.bin_column = bin_column
-        self.label = self.get_mapped_labels(self.dataset, self.dataset_path)
+        # Check if this dataset is for mammography lesions
+        if 'lesions_png' in str(labels_dir):  
+            self.mammo_dataset = MammoLesionsDataset(root=labels_dir, mode=mode, transform=None)
+            self.label = self.mammo_dataset.get_mapped_labels()
+        else:
+            # Load labels from a CSV file (fallback to original behavior)
+            self.dataset_path = self.datapath / f'{mode}_{fold}.csv'
+            if not self.dataset_path.exists():
+                raise Exception(f"{self.dataset_path} could not be found")
+            self.dataset = pd.read_csv(self.dataset_path, index_col=0)
+            self.multi_class = multi_class
+            self.label = self.get_mapped_labels(self.dataset, self.dataset_path)
 
-    def get_mapped_labels(self, df, dataset_path):
+    def get_mapped_labels(self, df=None, dataset_path=None):
+        if hasattr(self, "mammo_dataset"):  # If using MammoLesionsDataset, return its labels
+            return self.mammo_dataset.get_mapped_labels()
+        
         if self.multi_class:
             return list(df[self.bin_column].values)
         else:
-            if 'oct' in str(dataset_path):
-                return list(
-                    df[['NOR', 'AMD', 'WAMD', 'DR', 'CSC', 'PED', 'MEM', 'FLD', 'EXU', 'CNV', 'RVO']].values)
-            elif 'TNBC' in str(dataset_path):
-                return list(df[['er', 'pr', 'her2', 'type_tn']].values)
-            elif 'retina' in str(dataset_path):
-                return list(df[['er', 'pr', 'her2', 'type_tn']].values)
-            else:
-                raise Exception('Error in get mapped labels')
+            raise Exception("Dataset label mapping not defined for this case.")
 
     def __len__(self):
         return len(self.label)
 
     def __getitem__(self, idx):
-        label_file = self.label[idx]
-
-        return 0, torch.from_numpy(label_file)
+        label_file = self.label[idx] 
+        label_array = np.array(label_file, dtype=np.float32)
+        
+        return 0, torch.from_numpy(label_array)
 
 
 def main(args):
@@ -131,8 +135,8 @@ def main(args):
 
     # Auto-download a pre-trained model or load a custom DiT checkpoint from train.py:
     ckpt_path = args.ckpt or f"DiT-XL-2-{args.image_size}x{args.image_size}.pt"
-    state_dict = find_model(ckpt_path)
-    model.load_state_dict(state_dict)
+    #state_dict = find_model(ckpt_path)
+    #model.load_state_dict(state_dict)
     model.eval()  # important!
     diffusion = create_diffusion(str(args.num_sampling_steps))
     if not args.image_space:
@@ -177,12 +181,15 @@ def main(args):
         labels_name=['0','1','2','3','4']
     else:
         # Setup data:
-        dataset = CustomDataset(args.data_path, mode='val', fold=args.fold)
+        dataset = CustomDataset(args.data_path, mode='test', fold=args.fold)
 
-        if 'oct' in args.data_path:
-            labels_name = ['NOR', 'AMD', 'WAMD', 'DR', 'CSC', 'PED', 'MEM', 'FLD', 'EXU', 'CNV', 'RVO']
-        elif 'TNBC' in args.data_path:
-            labels_name = ['er', 'pr', 'her2', 'type_tn']
+        #if 'oct' in args.data_path:
+        #    labels_name = ['NOR', 'AMD', 'WAMD', 'DR', 'CSC', 'PED', 'MEM', 'FLD', 'EXU', 'CNV', 'RVO']
+        #elif 'TNBC' in args.data_path:
+        #    labels_name = ['er', 'pr', 'her2', 'type_tn']
+        if 'lesions_png' in args.data_path:
+            temp_dataset = MammoLesionsDataset(root=args.data_path, mode='train', transform=None)
+            labels_name = temp_dataset.all_labels
 
     loader = DataLoader(
         dataset,
