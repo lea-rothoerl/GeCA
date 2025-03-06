@@ -2,9 +2,14 @@ import os
 import pandas as pd
 import shutil
 
-# Paths
-lesion_dir = "../lesions_png"
-csv_path = "../../shared_data/VinDr_Mammo/finding_annotations.csv"
+parser = argparse.ArgumentParser(description="Sort lesion images into train/test folders based on CSV annotations.")
+parser.add_argument("lesion_dir", help="Path to the lesion PNG directory.")
+parser.add_argument("csv_path", help="Path to the annotations CSV file.")
+
+args = parser.parse_args()
+
+lesion_dir = args.lesion_dir
+csv_path = args.csv_path
 
 # Load annotations CSV
 df = pd.read_csv(csv_path)

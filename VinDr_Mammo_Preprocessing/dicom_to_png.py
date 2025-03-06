@@ -205,7 +205,9 @@ if __name__ == "__main__":
     parser.add_argument("--resize", action="store_true", 
                         help="Apply resizing with padding to a uniform target size.")
     parser.add_argument("--lesions", action="store_true", 
-                        help="Extract lesions based on finding_annotations.csv.")
+                        help="Extract lesions based on finding_annotations.csv.")    
+    parser.add_argument("--annotations", type=str, default=None, 
+                        help="Path to the CSV file for lesion annotations.")
     
     args = parser.parse_args()
 
@@ -213,7 +215,7 @@ if __name__ == "__main__":
     annotations_df = None
     if args.lesions:
         try:
-            annotations_df = pd.read_csv("../shared_data/VinDr_Mammo/finding_annotations.csv") # NEED TO KEEP THIS UP TO DATE
+            annotations_df = pd.read_csv(args.annotations) 
             print("Loaded finding_annotations.csv")
         except Exception as e:
             print(f"Error loading finding_annotations.csv: {e}")
