@@ -67,10 +67,18 @@ KID values are expressed as 1e-3. Models are trained and evaluated with classifi
     ```sh
     CUDA_VISIBLE_DEVICES=0 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --data-path data/oct_multilabel/ --features-path store/oct_features/ --global-batch-size 128 --fold 0
     ```
+    **Lea's Command**:
+    ```sh
+    CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --data-path /home/lea_urv/lesions_png/ --features-path /home/lea_urv/lesions_features/training/ --global-batch-size 128 --fold 0
+    ```
 
 2. **Model Training**:
     ```sh
     CUDA_VISIBLE_DEVICES=0,1,2,3 accelerate launch --main_process_port 29504 --multi_gpu --num_processes 4 --mixed_precision fp16 train.py --model GeCA-S --feature-path store/oct_features/ --num-classes 11 --global-batch-size 128 --epochs 14000 --fold 8 --validate_every 700 --data-path data/oct_multilabel/ --results-dir ./results_oct_GeCA/
+    ```
+    **Lea's Command**:
+    ```sh
+    CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/lesions_features/training --global-batch-size 64 --epochs 10 --fold 0 --validate_every 700 --data-path /home/lea_urv/lesions_png/ --results-dir ../results_lesions_GeCA/
     ```
 
 ## Evaluating GeCA
