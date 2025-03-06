@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import shutil
+import argparse
 
 parser = argparse.ArgumentParser(description="Sort lesion images into train/test folders based on CSV annotations.")
 parser.add_argument("lesion_dir", help="Path to the lesion PNG directory.")
