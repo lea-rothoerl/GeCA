@@ -90,7 +90,7 @@ KID values are expressed as 1e-3. Models are trained and evaluated with classifi
     ```
     **Lea's Command**:
     ```sh
-    CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/lesions_features/training --global-batch-size 64 --epochs 10 --fold 0 --num-classes 11 --validate_every 700 --data-path /home/lea_urv/lesions_png/ --results-dir ../results_lesions_GeCA/ --image-size 128 --num-workers 2
+    CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/lesions_features/training --global-batch-size 32 --epochs 5000 --fold 0 --num-classes 11 --validate_every 50 --data-path /home/lea_urv/lesions_png/ --results-dir ../results_lesions_GeCA/ --image-size 128 --num-workers 2
     ```
 
 ## Evaluating GeCA
