@@ -189,9 +189,16 @@ def main(args):
     # Note that parameter initialization is done within the DiT constructor
     model = model.to(device)
     if os.path.exists(args.load_from):
-        state_dict = find_model(os.path.join(args.load_from, 'best_ckpt.pt'))
+        #state_dict = find_model(os.path.join(args.load_from, 'best_ckpt.pt'))
+        #model.load_state_dict(state_dict)
+        checkpt_path = os.path.join(args.load_from, 'best_ckpt.pt')
+        if os.path.exists(checkpt_path):
+            checkpt = torch.load(checkpt_path)
+            model.load_state_dict(checkpt['model'])
+            print(f"Checkpoint loaded from {checkpt_path}")
+        else:
+            print(f"No checkpoint found at {checkpt_path}")
 
-        model.load_state_dict(state_dict)
     else:
         print('Initalizing Model randomly')
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
