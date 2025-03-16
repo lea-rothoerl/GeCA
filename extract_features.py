@@ -33,6 +33,8 @@ import os
 from TNBC_dataset import TNBCDataset
 # MammoLesions
 from MammoLesions_dataset import MammoLesionsDataset
+# MammoFullField
+from MammoFullField_dataset import MammoFullFieldDataset
 from models import DiT_models
 from diffusion import create_diffusion
 from diffusers.models import AutoencoderKL
@@ -152,6 +154,9 @@ def main(args):
 
     if "lesions_png" in args.data_path:
         dataset = MammoLesionsDataset(root=args.data_path, mode='train', transform=transform)
+
+    if "fullfield_png" in args.data_path:
+        dataset = MammoFullFieldDataset(root=args.data_path, mode='train', transform=transform)
 
     sampler = DistributedSampler(
         dataset,

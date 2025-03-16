@@ -38,7 +38,10 @@ import pandas as pd
 from torchvision import transforms
 import torch.nn.functional as F
 
+# MammoLesions
 from MammoLesions_dataset import MammoLesionsDataset
+# MammoFullField
+from MammoFullField_dataset import MammoFullFieldDataset
 
 def create_npz_from_sample_folder(sample_dir, num=50_000):
     """
@@ -67,6 +70,10 @@ class CustomDataset(Dataset):
         if 'lesions_png' in str(labels_dir):  
             self.mammo_dataset = MammoLesionsDataset(root=labels_dir, mode=mode, transform=None)
             self.label = self.mammo_dataset.get_mapped_labels()
+        # Check if this dataset is for mammography lesions
+        elif 'fullfield_png' in str(labels_dir):  
+            self.mammo_dataset = MammoFullFieldDataset(root=labels_dir, mode=mode, transform=None)
+            self.label = self.mammo_dataset.get_mapped_labels()
         else:
             # Load labels from a CSV file (fallback to original behavior)
             self.dataset_path = self.datapath / f'{mode}_{fold}.csv'
@@ -77,7 +84,7 @@ class CustomDataset(Dataset):
             self.label = self.get_mapped_labels(self.dataset, self.dataset_path)
 
     def get_mapped_labels(self, df=None, dataset_path=None):
-        if hasattr(self, "mammo_dataset"):  # If using MammoLesionsDataset, return its labels
+        if hasattr(self, "mammo_dataset"):  
             return self.mammo_dataset.get_mapped_labels()
         
         if self.multi_class:
@@ -189,6 +196,9 @@ def main(args):
         #    labels_name = ['er', 'pr', 'her2', 'type_tn']
         if 'lesions_png' in args.data_path:
             temp_dataset = MammoLesionsDataset(root=args.data_path, mode='train', transform=None)
+            labels_name = temp_dataset.all_labels
+        elif 'fullfield_png' in args.data_path:
+            temp_dataset = MammoFullFieldDataset(root=args.data_path, mode='train', transform=None)
             labels_name = temp_dataset.all_labels
 
     loader = DataLoader(

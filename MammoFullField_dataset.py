@@ -6,9 +6,9 @@ import torch
 from torch.utils.data import Dataset
 import pandas as pd
 
-class MammoLesionsDataset(Dataset):
+class MammoFullFieldDataset(Dataset):
     def __init__(self, root: str, mode: str = "train", transform=None, annotation_path="../../shared_data/VinDr_Mammo/finding_annotations.csv"):
-        super(MammoLesionsDataset, self).__init__()
+        super(MammoFullFieldDataset, self).__init__()
         self.root = root
         self.transform = transform
         self.mode = mode

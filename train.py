@@ -11,7 +11,10 @@ import torch
 from medmnist.dataset import RetinaMNIST
 
 from TNBC_dataset import TNBCDataset
+# MammoLesions
 from MammoLesions_dataset import MammoLesionsDataset
+# MammoFullField
+from MammoFullField_dataset import MammoFullFieldDataset
 #from download import find_model
 
 # the first flag below was False when we tested this script but True makes A100 training a lot faster:
@@ -248,6 +251,9 @@ def main(args):
 
     if 'lesions_png' in args.data_path:  
         val_dataset = MammoLesionsDataset(root=args.data_path, transform=transform, mode='test')
+
+    if 'fullfield_png' in args.data_path:  
+        val_dataset = MammoFullFieldDataset(root=args.data_path, transform=transform, mode='test')
 
 
     val_dl = DataLoader(val_dataset, batch_size=int(args.val_samples // accelerator.num_processes),
