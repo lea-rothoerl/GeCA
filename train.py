@@ -469,6 +469,7 @@ def main(args):
                         if accelerator.is_main_process:
                             # TODO add module
                             checkpoint = {
+                                "epoch": epoch,
                                 "model": model.state_dict(),
                                 "ema": ema.state_dict(),
                                 "opt": opt.state_dict(),
