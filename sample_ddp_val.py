@@ -143,7 +143,12 @@ def main(args):
     # Auto-download a pre-trained model or load a custom DiT checkpoint from train.py:
     ckpt_path = args.ckpt or f"DiT-XL-2-{args.image_size}x{args.image_size}.pt"
     #state_dict = find_model(ckpt_path)
-    #model.load_state_dict(state_dict)
+    checkpt = torch.load(ckpt_path, map_location="cuda")
+    state_dict = checkpt["model"]
+
+    new_state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
+
+    model.load_state_dict(new_state_dict)
     model.eval()  # important!
     diffusion = create_diffusion(str(args.num_sampling_steps))
     if not args.image_space:

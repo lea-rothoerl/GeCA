@@ -100,7 +100,7 @@ KID values are expressed as 1e-3. Models are trained and evaluated with classifi
     ```
     **Lea's Command**
     ```sh
-    CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --data-path /home/lea_urv/lesions_png/ --fold 0 --num-sampling-steps 10 --ckpt ./results_lesions_GeCA/027-GeCA-S-0/checkpoints/best_ckpt.pt --sample-dir ./synthetic_lesions/
+    CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --data-path /home/lea_urv/lesions_png/ --fold 0 --num-sampling-steps 250 --ckpt ./results_lesions_GeCA/000-GeCA-S-0/checkpoints/best_ckpt.pt --sample-dir ./synthetic_lesions/
     ```
 
 2. Evaluate generated images:
