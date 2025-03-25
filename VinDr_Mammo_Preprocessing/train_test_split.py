@@ -12,19 +12,19 @@ args = parser.parse_args()
 lesion_dir = args.lesion_dir
 csv_path = args.csv_path
 
-# Load annotations CSV
+# load annotations CSV
 df = pd.read_csv(csv_path)
 
-# Create output directories
+# create output directories
 train_dir = os.path.join(lesion_dir, "training")
 test_dir = os.path.join(lesion_dir, "test")
 os.makedirs(train_dir, exist_ok=True)
 os.makedirs(test_dir, exist_ok=True)
 
-# Dictionary mapping image_id to split type
+# dictionary mapping image_id to split type
 split_dict = dict(zip(df["image_id"], df["split"]))
 
-# Process lesion files
+# process lesion files
 for filename in os.listdir(lesion_dir):
     if filename.endswith(".png"):
         image_id = filename.split("_lesion_")[0]
