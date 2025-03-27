@@ -156,7 +156,7 @@ def main(args):
         dataset = MammoLesionsDataset(root=args.data_path, mode='train', transform=transform)
 
     if "fullfield_png" in args.data_path:
-        dataset = MammoFullFieldDataset(root=args.data_path, mode='train', transform=transform)
+        dataset = MammoFullFieldDataset(root=args.data_path, mode='training', transform=transform)
 
     sampler = DistributedSampler(
         dataset,

@@ -51,8 +51,8 @@ class MammoFullFieldDataset(Dataset):
         """
         labels = []
         for img_path in self.image_paths:
-            # extract image_id by removing "_lesion_{idx}" suffix from filename
-            img_id = Path(img_path).stem.split('_lesion')[0]  
+            # extract image_id by removing ".png" from filename
+            img_id = Path(img_path).stem.split('.png')[0]  
             
             # get the labels for image_id
             label_strings = self.label_dict.get(img_id, [])
@@ -75,8 +75,8 @@ class MammoFullFieldDataset(Dataset):
         if self.transform:
             img = self.transform(img)
 
-        # extract image_id by removing "_lesion_{idx}" suffix from filename
-        img_id = Path(img_path).stem.split('_lesion')[0]  
+        # extract image ID from file name
+        img_id = Path(img_path).stem
 
         # get the labels for the image_id
         label_strings = self.label_dict.get(img_id, [])

@@ -79,6 +79,11 @@ KID values are expressed as 1e-3. Models are trained and evaluated with classifi
     ```sh
     nice -n 10 python3 VinDr_Mammo_Preprocessing/full_field_split.py ../fullfield_png/ ../../shared_data/VinDr_Mammo/metadata.csv ../../shared_data/VinDr_Mammo/breast-level_annotations.csv ../fullfield_png_split/
     ```
+    For reference, sizes of training folders:
+    - Giotto Class: 137
+    - Giotto Image 3DL: 63
+    - Mammomat Inspiration: 3050
+    - Planmed Nuance: 751
 
 ## Training GeCA
 
@@ -90,6 +95,10 @@ KID values are expressed as 1e-3. Models are trained and evaluated with classifi
     ```sh
     CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --data-path /home/lea_urv/lesions_png/ --features-path /home/lea_urv/lesions_features/training/ --global-batch-size 128 --fold 0
     ```
+    **Lea's Command (Full Field)**:
+    ```sh
+    CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --data-path /home/lea_urv/fullfield_png_split/Mammomat Inspiration/L_CC/ --features-path /home/lea_urv/fullfield_features/Mammomat/L_CC/training/ --global-batch-size 128 --fold 0
+    ```
 
 2. **Model Training**:
     ```sh
@@ -98,6 +107,10 @@ KID values are expressed as 1e-3. Models are trained and evaluated with classifi
     **Lea's Command (Lesions)**:
     ```sh
     CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/lesions_features/training --global-batch-size 32 --epochs 5000 --fold 0 --num-classes 11 --validate_every 50 --data-path /home/lea_urv/lesions_png/ --results-dir ../results_lesions_GeCA/ --image-size 128 --num-workers 2
+    ```
+    **Lea's Command (Full Field)**:
+    ```sh
+    CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/lesions_features/training --global-batch-size 32 --epochs 2000 --fold 0 --num-classes 12 --validate_every 50 --data-path /home/lea_urv/fullfield_png_split/Mammomat Inspiration/L_CC/ --results-dir ../results_lesions_GeCA/ --image-size 128 --num-workers 2
     ```
 
 ## Evaluating GeCA
