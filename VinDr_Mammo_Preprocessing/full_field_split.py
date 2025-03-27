@@ -27,25 +27,24 @@ meta_dict = dict(zip(meta_df["SOP Instance UID"], meta_df["Manufacturer's Model 
 breastlevel_dict = breastlevel_df.set_index("image_id")[["laterality", "view_position", "split"]].to_dict(orient="index")
 
 # create directories and subfolders
-for model in meta_df["Manufacturer's Model Name"].unique():
-    model_dir = os.path.join(output_dir, model)
-    os.makedirs(model_dir, exist_ok=True)
+for study_folder in os.listdir(png_dir):
+    study_path = os.path.join(png_dir, study_folder)
 
-    for _, row in breastlevel_df.iterrows():
-        laterality = row["laterality"]
-        view_position = row["view_position"]
-        subfolder = f"{laterality}_{view_position}"
+    if not os.path.isdir(study_path):  # skip index.html
+        continue
 
-        subfolder_path = os.path.join(model_dir, subfolder)
-        os.makedirs(os.path.join(subfolder_path, "training"), exist_ok=True)
-        os.makedirs(os.path.join(subfolder_path, "test"), exist_ok=True)
+    for filename in os.listdir(study_path):
+        if filename.endswith(".png"):
+            image_id = filename.replace(".png", "")
 
-# move images to their folders
-for filename in os.listdir(png_dir):
-    if filename.endswith(".png"):
-        image_id = filename.split(".png")[0]
+            if image_id not in meta_dict:
+                print(f"WARNING: {image_id} not found in metadata CSV. Skipping...")
+                continue
 
-        if image_id in meta_dict and image_id in breastlevel_dict:
+            if image_id not in breastlevel_dict:
+                print(f"WARNING: {image_id} not found in breast-level CSV. Skipping...")
+                continue
+
             model_name = meta_dict[image_id]
             laterality = breastlevel_dict[image_id]["laterality"]
             view_position = breastlevel_dict[image_id]["view_position"]
@@ -54,10 +53,13 @@ for filename in os.listdir(png_dir):
             dest_folder = os.path.join(output_dir, model_name, f"{laterality}_{view_position}", split)
             os.makedirs(dest_folder, exist_ok=True)
 
-            src_path = os.path.join(png_dir, filename)
+            src_path = os.path.join(study_path, filename)
             dest_path = os.path.join(dest_folder, filename)
 
-            shutil.move(src_path, dest_path)
-            print(f"Moved {filename} to {dest_folder}/")
+            try:
+                shutil.move(src_path, dest_path)
+                print(f"Moved {filename} to {dest_folder}/")
+            except Exception as e:
+                print(f"ERROR moving {filename}: {e}")
 
 print("Finished sorting full field images.")
