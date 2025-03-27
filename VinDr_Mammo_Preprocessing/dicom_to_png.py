@@ -188,6 +188,9 @@ def process_dicom_folder(input_root, output_root, target_size=(512, 512), apply_
                 else:        
                     relative_path = os.path.relpath(subdir, input_root)
                     output_subdir = os.path.join(output_root, relative_path)
+                    if os.path.exists(output_subdir) and not os.path.isdir(output_subdir):
+                        print(f"Warning: {output_subdir} exists but is not a directory. Deleting it.")
+                        os.remove(output_subdir)  
                     os.makedirs(output_subdir, exist_ok=True)
                     output_file_path = os.path.join(output_subdir, os.path.splitext(file)[0] + ".png")
                     dicom_to_png(input_file_path, output_file_path, target_size=target_size, apply_resize=apply_resize)
