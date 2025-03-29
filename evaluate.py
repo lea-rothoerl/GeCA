@@ -17,6 +17,10 @@ from fld.metrics.FLD import FLD
 from medmnist import RetinaMNIST
 
 from TNBC_dataset import TNBCDataset
+# MammoLesions
+from MammoLesions_dataset import MammoLesionsDataset
+# MammoFullField
+from MammoFullField_dataset import MammoFullFieldDataset
 from extract_features import center_crop_arr
 
 
@@ -87,15 +91,19 @@ if __name__ == "__main__":
         config=vars(args)
     )
 
+    real_images_dir = os.path.join(args.real, 'test')
+    real_imgs = [os.path.join(real_images_dir, filename) for filename in 
+                 os.listdir(real_images_dir) if filename.endswith('.png')]
+
     synthpath = Path(args.gen) / f'val_syn_{args.fold}.csv'
     dataset_synth = pd.read_csv(synthpath, index_col=0)
     gen_imgs = [os.path.join(str(args.gen), filename) for filename in
                 dataset_synth['filename'].values]
 
-    dataset_path = Path(args.real) / f'val_{args.fold}.csv'
-    dataset = pd.read_csv(dataset_path, index_col=0)
-    real_imgs = [os.path.join(str(args.real), str(filename)) for filename in
-                 dataset['filename'].values]
+    #dataset_path = Path(args.real) / f'val_{args.fold}.csv'
+    #dataset = pd.read_csv(dataset_path, index_col=0)
+    #real_imgs = [os.path.join(str(args.real), str(filename)) for filename in
+    #             dataset['filename'].values]
     if args.gg_extractor == 'dino':
         feature_extractor = DINOv2FeatureExtractor()
     elif args.gg_extractor == 'inception':
@@ -103,24 +111,16 @@ if __name__ == "__main__":
     elif args.gg_extractor == 'clip':
         feature_extractor = CLIPFeatureExtractor()
 
-    if 'RetinaMNIST' in args.real:
-        dataset_real = RetinaMNIST(root=args.real, as_rgb=True,
-                                   transform=None, size=224,
-                                   download=True,
-                                   split='train',
-                                   target_transform=None
-                                   )
-        dataset_test = RetinaMNIST(root=args.real, as_rgb=True,
-                                   transform=None, size=224,
-                                   download=True,
-                                   split='test', #testing
-                                   target_transform=None
-                                   )
-    elif 'oct' in args.real:
-        dataset_real = TNBCDataset(args.real, transform=tf.Compose([tf.ToPILImage()])
-                                   , mode='train', fold=args.fold)
-        dataset_test = TNBCDataset(args.real, transform=tf.Compose([tf.ToPILImage()])
-                                   , mode='val', fold=args.fold) #testing
+    if 'lesions' in args.real:
+        dataset_real = MammoLesionsDataset(args.real, transform=tf.Compose([tf.ToPILImage()])
+                                   , mode='train')
+        dataset_test = MammoLesionsDataset(args.real, transform=tf.Compose([tf.ToPILImage()])
+                                   , mode='test') 
+    elif 'fullfield' in args.real:
+        dataset_real = MammoFullFieldDataset(args.real, transform=tf.Compose([tf.ToPILImage()])
+                                   , mode='training')
+        dataset_test = MammoFullFieldDataset(args.real, transform=tf.Compose([tf.ToPILImage()])
+                                   , mode='test') 
     else:
         raise Exception('Dataset not supported')
 

@@ -120,12 +120,24 @@ KID values are expressed as 1e-3. Models are trained and evaluated with classifi
     ```
     **Lea's Command (Lesions)**
     ```sh
-    CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --data-path /home/lea_urv/lesions_png/ --fold 0 --num-sampling-steps 250 --ckpt ./results_lesions_GeCA/000-GeCA-S-0/checkpoints/best_ckpt.pt --sample-dir ./synthetic_lesions/
+    CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --data-path /home/lea_urv/lesions_png/ --fold 0 --num-sampling-steps 250 --ckpt ../results_lesions_GeCA/000-GeCA-S-0/checkpoints/best_ckpt.pt --sample-dir ../synthetic_lesions/
+    ```
+    **Lea's Command (Full Field)**
+    ```sh
+    CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --data-path /home/lea_urv/fullfield_png_split/Mammomat\ Inspiration/L_CC/ --fold 0 --num-sampling-steps 250 --ckpt ../results_fullfield_GeCA/Mammomat/L_CC/000-GeCA-S-0/checkpoints/best_ckpt.pt --sample-dir ../synthetic_fullfield/
     ```
 
 2. Evaluate generated images:
     ```sh
     python evaluate.py --fold 0 --image-size 256 --device_list cuda:0 --real ./oct_multilabel/ --gen ./synthetic_oct/GeCA-S-GS-fold-0-nstep-250-best_ckpt-size-256-vae-ema-cfg-1.5-seed-0/
+    ```
+    **Lea's Command (Lesions)**
+    ```sh
+    python evaluate.py --fold 0 --image-size 256 --device_list cuda:0 --real /home/lea_urv/lesions_png/ --gen ../synthetic_lesions/GeCA-S-GS-fold-0-nstep-250-best_ckpt-size-256-vae-ema-cfg-1.5-seed-0/
+    ```
+    **Lea's Command (Full Field)**
+    ```sh
+    python evaluate.py --fold 0 --image-size 256 --device_list cuda:0 --real /home/lea_urv/fullfield_png_split/Mammomat\ Inspiration/L_CC/ --gen ../synthetic_fullfield/GeCA-S-GS-fold-0-nstep-250-best_ckpt-size-256-vae-ema-cfg-1.5-seed-0/
     ```
 
 
