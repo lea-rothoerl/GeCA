@@ -203,7 +203,7 @@ def main(args):
             temp_dataset = MammoLesionsDataset(root=args.data_path, mode='train', transform=None)
             labels_name = temp_dataset.all_labels
         elif 'fullfield_png' in args.data_path:
-            temp_dataset = MammoFullFieldDataset(root=args.data_path, mode='train', transform=None)
+            temp_dataset = MammoFullFieldDataset(root=args.data_path, mode='training', transform=None)
             labels_name = temp_dataset.all_labels
 
     loader = DataLoader(
