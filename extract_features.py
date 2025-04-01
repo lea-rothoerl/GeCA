@@ -31,10 +31,8 @@ import argparse
 import logging
 import os
 from TNBC_dataset import TNBCDataset
-# MammoLesions
-from MammoLesions_dataset import MammoLesionsDataset
-# MammoFullField
-from MammoFullField_dataset import MammoFullFieldDataset
+# Mammo
+from Mammo_dataset import MammoDataset
 from models import DiT_models
 from diffusion import create_diffusion
 from diffusers.models import AutoencoderKL
@@ -152,12 +150,12 @@ def main(args):
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True)
     ])
 
-    if "lesions_png" in args.data_path:
-        dataset = MammoLesionsDataset(root=args.data_path, mode='train', transform=transform)
-
-    if "fullfield_png" in args.data_path:
-        dataset = MammoFullFieldDataset(root=args.data_path, mode='training', transform=transform)
-
+    dataset = MammoDataset(
+        root=args.image_root,  
+        annotation_path=args.annotation_path,  
+        mode='training', 
+        transform=transform
+    )
     sampler = DistributedSampler(
         dataset,
         num_replicas=dist.get_world_size(),
@@ -198,7 +196,8 @@ def main(args):
 if __name__ == "__main__":
     # Default args here will train DiT-XL/2 with the hyperparameters we used in our paper (except training iters).
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data-path", type=str, required=True)
+    parser.add_argument("--image-root", type=str, required=True)  
+    parser.add_argument("--annotation-path", type=str, required=True)
     parser.add_argument("--features-path", type=str, default="features")
     parser.add_argument("--results-dir", type=str, default="results")
     parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2")

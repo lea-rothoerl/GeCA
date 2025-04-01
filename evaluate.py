@@ -17,10 +17,8 @@ from fld.metrics.FLD import FLD
 from medmnist import RetinaMNIST
 
 from TNBC_dataset import TNBCDataset
-# MammoLesions
-from MammoLesions_dataset import MammoLesionsDataset
-# MammoFullField
-from MammoFullField_dataset import MammoFullFieldDataset
+# Mammo
+from Mammo_dataset import MammoDataset
 from extract_features import center_crop_arr
 
 
@@ -71,7 +69,8 @@ def eval_lpips_diversity(img_paths, device: str = 'cuda'):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--real', type=str,default='/home/mkfmelbatel/ELEC6910X/Assignment_1/data/RetinaMNIST/', help='Path to real images')
+    parser.add_argument("--image-root", type=str, required=True)
+    parser.add_argument("--annotation-path", type=str, required=True)
     parser.add_argument('--gen', type=str, help='Path to generated images')
     parser.add_argument('--device_list', nargs='+', default='cuda:0', help='List of device(s) to use.')
     parser.add_argument("--image-size", type=int, choices=[128, 256, 512], default=256)
@@ -91,7 +90,8 @@ if __name__ == "__main__":
         config=vars(args)
     )
 
-    real_images_dir = os.path.join(args.real, 'test')
+    # TODO
+    real_images_dir = os.path.join(args.image-root, 'test')
     real_imgs = [os.path.join(real_images_dir, filename) for filename in 
                  os.listdir(real_images_dir) if filename.endswith('.png')]
 
@@ -100,10 +100,6 @@ if __name__ == "__main__":
     gen_imgs = [os.path.join(str(args.gen), filename) for filename in
                 dataset_synth['filename'].values]
 
-    #dataset_path = Path(args.real) / f'val_{args.fold}.csv'
-    #dataset = pd.read_csv(dataset_path, index_col=0)
-    #real_imgs = [os.path.join(str(args.real), str(filename)) for filename in
-    #             dataset['filename'].values]
     if args.gg_extractor == 'dino':
         feature_extractor = DINOv2FeatureExtractor()
     elif args.gg_extractor == 'inception':
@@ -111,18 +107,16 @@ if __name__ == "__main__":
     elif args.gg_extractor == 'clip':
         feature_extractor = CLIPFeatureExtractor()
 
-    if 'lesions' in args.real:
-        dataset_real = MammoLesionsDataset(args.real, transform=tf.Compose([tf.ToPILImage()])
-                                   , mode='train')
-        dataset_test = MammoLesionsDataset(args.real, transform=tf.Compose([tf.ToPILImage()])
-                                   , mode='test') 
-    elif 'fullfield' in args.real:
-        dataset_real = MammoFullFieldDataset(args.real, transform=tf.Compose([tf.ToPILImage()])
-                                   , mode='training')
-        dataset_test = MammoFullFieldDataset(args.real, transform=tf.Compose([tf.ToPILImage()])
-                                   , mode='test') 
-    else:
-        raise Exception('Dataset not supported')
+    dataset_real = MammoDataset(
+        root=args.image_root, 
+        transform=tf.Compose([tf.ToPILImage()]), 
+        mode='training', 
+        annotation_path=args.annotation_path)
+    dataset_test = MammoDataset(
+        root=args.image_root, 
+        transform=tf.Compose([tf.ToPILImage()]), 
+        mode='test', 
+        annotation_path=args.annotation_path)
 
     train_feat = feature_extractor.get_features(dataset_real)
     test_feat = feature_extractor.get_features(dataset_test)

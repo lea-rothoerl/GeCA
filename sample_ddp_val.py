@@ -38,10 +38,8 @@ import pandas as pd
 from torchvision import transforms
 import torch.nn.functional as F
 
-# MammoLesions
-from MammoLesions_dataset import MammoLesionsDataset
-# MammoFullField
-from MammoFullField_dataset import MammoFullFieldDataset
+# Mammo
+from Mammo_dataset import MammoDataset
 
 def create_npz_from_sample_folder(sample_dir, num=50_000):
     """
@@ -65,23 +63,9 @@ class CustomDataset(Dataset):
     def __init__(self, labels_dir, mode='train', fold=0, multi_class=False):
 
         self.datapath = Path(labels_dir)
-
-        # Check if this dataset is for mammography lesions
-        if 'lesions_png' in str(labels_dir):  
-            self.mammo_dataset = MammoLesionsDataset(root=labels_dir, mode=mode, transform=None)
-            self.label = self.mammo_dataset.get_mapped_labels()
-        # Check if this dataset is for mammography lesions
-        elif 'fullfield_png' in str(labels_dir):  
-            self.mammo_dataset = MammoFullFieldDataset(root=labels_dir, mode=mode, transform=None)
-            self.label = self.mammo_dataset.get_mapped_labels()
-        else:
-            # Load labels from a CSV file (fallback to original behavior)
-            self.dataset_path = self.datapath / f'{mode}_{fold}.csv'
-            if not self.dataset_path.exists():
-                raise Exception(f"{self.dataset_path} could not be found")
-            self.dataset = pd.read_csv(self.dataset_path, index_col=0)
-            self.multi_class = multi_class
-            self.label = self.get_mapped_labels(self.dataset, self.dataset_path)
+  
+        self.mammo_dataset = MammoDataset(root=labels_dir, mode=mode, transform=None)
+        self.label = self.mammo_dataset.get_mapped_labels()
 
     def get_mapped_labels(self, df=None, dataset_path=None):
         if hasattr(self, "mammo_dataset"):  
@@ -142,7 +126,6 @@ def main(args):
 
     # Auto-download a pre-trained model or load a custom DiT checkpoint from train.py:
     ckpt_path = args.ckpt or f"DiT-XL-2-{args.image_size}x{args.image_size}.pt"
-    #state_dict = find_model(ckpt_path)
     checkpt = torch.load(ckpt_path, map_location="cuda")
     state_dict = checkpt["model"]
 
@@ -176,35 +159,10 @@ def main(args):
     # To make things evenly-divisible, we'll sample a bit more than we need and then discard the extra samples:
     # total_samples = int(math.ceil(args.num_fid_samples / global_batch_size) * global_batch_size)
 
-    if 'RetinaMNIST' in args.data_path:
-        train_transform = transforms.Compose([
-            transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, args.image_size)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-
-        ])
-        dataset = RetinaMNIST(root=args.data_path, as_rgb=True, transform=train_transform, size=224,
-                                  download=True,
-                                  split='test',
-                                  target_transform=transforms.Compose([
-                                      lambda x: torch.LongTensor(x),  # or just torch.tensor
-                                      lambda x: F.one_hot(x, 5)])
-                                  )
-        labels_name=['0','1','2','3','4']
-    else:
-        # Setup data:
-        dataset = CustomDataset(args.data_path, mode='test', fold=args.fold)
-
-        #if 'oct' in args.data_path:
-        #    labels_name = ['NOR', 'AMD', 'WAMD', 'DR', 'CSC', 'PED', 'MEM', 'FLD', 'EXU', 'CNV', 'RVO']
-        #elif 'TNBC' in args.data_path:
-        #    labels_name = ['er', 'pr', 'her2', 'type_tn']
-        if 'lesions_png' in args.data_path:
-            temp_dataset = MammoLesionsDataset(root=args.data_path, mode='train', transform=None)
-            labels_name = temp_dataset.all_labels
-        elif 'fullfield_png' in args.data_path:
-            temp_dataset = MammoFullFieldDataset(root=args.data_path, mode='training', transform=None)
-            labels_name = temp_dataset.all_labels
+    # Setup data:
+    dataset = CustomDataset(args.annotation_path, mode='test', fold=args.fold)
+    temp_dataset = MammoDataset(root=args.image_root, mode='training', transform=None)
+    labels_name = temp_dataset.all_labels
 
     loader = DataLoader(
         dataset,
@@ -215,14 +173,6 @@ def main(args):
         drop_last=False
     )
 
-    # if rank == 0:
-    #     print(f"Total number of images that will be sampled: {total_samples}")
-    # assert total_samples % dist.get_world_size() == 0, "total_samples must be divisible by world_size"
-    # samples_needed_this_gpu = int(total_samples // dist.get_world_size())
-    # assert samples_needed_this_gpu % n == 0, "samples_needed_this_gpu must be divisible by the per-GPU batch size"
-    # iterations = int(samples_needed_this_gpu // n)
-    # pbar = range(iterations)
-    # pbar = tqdm(pbar) if rank == 0 else pbar
     total = 0
     annotations = None
     dict_pd = []
@@ -330,7 +280,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--ckpt", type=str, default=None,
                         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).")
-    parser.add_argument("--data-path", type=str, required=True)
+    parser.add_argument("--image-root", type=str, required=True)
+    parser.add_argument("--annotation-path", type=str, required=True)
     parser.add_argument("--fold", type=int, default=0)
     parser.add_argument("--expand_ratio", type=int, default=1)
     parser.add_argument("--image_space", action='store_true', default=False)

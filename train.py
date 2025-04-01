@@ -11,10 +11,8 @@ import torch
 from medmnist.dataset import RetinaMNIST
 
 from TNBC_dataset import TNBCDataset
-# MammoLesions
-from MammoLesions_dataset import MammoLesionsDataset
-# MammoFullField
-from MammoFullField_dataset import MammoFullFieldDataset
+# Mammo
+from Mammo_dataset import MammoDataset
 #from download import find_model
 
 # the first flag below was False when we tested this script but True makes A100 training a lot faster:
@@ -219,41 +217,19 @@ def main(args):
     # Setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
     opt = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0)
 
-    if 'MNIST' in args.data_path:
-        transform = transforms.Compose([
-            transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, args.image_size)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    transform = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, args.image_size)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    ])
 
-        ])
-    else:
-        transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, args.image_size)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-
-        ])
-
-    if 'imagenet' in args.data_path:
-        val_dataset = ImageFolder(args.data_path, transform=transform)
-    elif 'RetinaMNIST' in args.data_path:
-        val_dataset = RetinaMNIST(root=args.data_path, as_rgb=True, transform=transform, size=224,
-                                  download=True,
-                                  split='test',
-                                  target_transform=transforms.Compose([
-                                      lambda x: torch.LongTensor(x),  # or just torch.tensor
-                                      lambda x: F.one_hot(x, args.num_classes)])
-                                  )
-
-    elif 'TNBC' in args.data_path or 'oct' in args.data_path:
-        val_dataset = TNBCDataset(args.data_path, transform=transform, mode='val', fold=args.fold)
-
-    if 'lesions_png' in args.data_path:  
-        val_dataset = MammoLesionsDataset(root=args.data_path, transform=transform, mode='test')
-
-    if 'fullfield_png' in args.data_path:  
-        val_dataset = MammoFullFieldDataset(root=args.data_path, transform=transform, mode='test')
+    val_dataset = MammoDataset(
+        root=args.image_root, 
+        transform=transform, 
+        mode='test', 
+        annotation_path=args.annotation_path
+    )
 
 
     val_dl = DataLoader(val_dataset, batch_size=int(args.val_samples // accelerator.num_processes),
@@ -280,29 +256,7 @@ def main(args):
 
         ])
 
-        if 'imagenet' in args.data_path:
-            dataset = ImageFolder(args.data_path, transform=train_transform)
-        elif 'RetinaMNIST' in args.data_path:
-            train_transform = transforms.Compose([
-                transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, args.image_size)),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-
-            ])
-
-            dataset = RetinaMNIST(root=args.data_path, as_rgb=True, transform=train_transform, size=224,
-                                  download=True,
-                                  split='train',
-                                  target_transform=transforms.Compose([
-                                      lambda x: torch.LongTensor(x),  # or just torch.tensor
-                                      lambda x: F.one_hot(x, args.num_classes)])
-                                  )
-        elif 'TNBC' in args.data_path or 'oct' in args.data_path:
-            dataset = TNBCDataset(args.data_path, transform=train_transform, mode='train', fold=args.fold,
-                                  cache=args.cache)
-
-        if 'lesions_png' in args.data_path:  
-            dataset = MammoLesionsDataset(root=args.data_path, transform=train_transform, mode='train')
+        dataset = MammoDataset(root=args.image_root, transform=train_transform, mode='train')
 
     loader = DataLoader(
         dataset,
@@ -505,7 +459,8 @@ if __name__ == "__main__":
     # Default args here will train DiT-XL/2 with the hyperparameters we used in our paper (except training iters).
     parser = argparse.ArgumentParser()
     parser.add_argument("--feature-path", type=str, default="features")
-    parser.add_argument("--data-path", type=str, default="data")
+    parser.add_argument("--image-root", type=str, required=True)
+    parser.add_argument("--annotation-path", type=str, required=True)
 
     parser.add_argument("--results-dir", type=str, default="results")
     parser.add_argument("--load_from", type=str, default="load_from")
