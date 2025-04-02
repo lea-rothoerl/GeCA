@@ -31,8 +31,9 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag):
             value = int(value)
         elif value.replace(".", "", 1).isdigit():
             value = float(value)
-        elif value.startswith("[") and value.endswith("]"):
-            df = df[df[column].str.contains(value.strip("[]"), regex=False, na=False)]
+    
+        if column == "finding_categories":
+            df = df[df[column].astype(str).str.contains(value, regex=False, na=False)]
         else:
             df = df[df[column] == value]
 
