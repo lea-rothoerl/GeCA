@@ -11,7 +11,7 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag):
         output_csv (str): Path to save the filtered CSV file.
         columns (list): List of column names to include in the output.
         conditions (list): List of conditions to filter rows (e.g., "laterality=R").
-        findings_flag (bool): Whether to generate lesion-based filenames.
+        findings_flag (bool): Whether to generate finding-based filenames.
     """
     df = pd.read_csv(input_csv)
 
@@ -42,14 +42,14 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag):
 
     # if --findings flag is set, modify filenames
     if findings_flag:
-        lesion_filenames = []
+        finding_filenames = []
         for _, row in df.iterrows():
             image_id = row["image_id"]
             finding_idx = row["finding_idx"]
-            lesion_filenames.extend(f"{image_id}_lesion_{finding_idx}.png")
+            finding_filename = f"{image_id}_lesion_{finding_idx}.png"
+            finding_filenames.append(finding_filename)
 
-        lesion_df = pd.DataFrame({"lesion_filename": lesion_filenames})
-        df = pd.concat([df.reset_index(drop=True), lesion_df], axis=1)
+        df["finding_filename"] = finding_filenames
 
     # save customized CSV
     df.to_csv(output_csv, index=False)
