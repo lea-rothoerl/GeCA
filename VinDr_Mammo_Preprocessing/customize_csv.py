@@ -49,7 +49,7 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag):
             finding_filename = f"{image_id}_lesion_{finding_idx}.png"
             finding_filenames.append(finding_filename)
 
-        df["finding_filename"] = finding_filenames
+        df["image_id"] = finding_filenames
 
     # save customized CSV
     df.to_csv(output_csv, index=False)
@@ -66,3 +66,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     filter_csv(args.input_csv, args.output_csv, args.columns, args.conditions, args.findings)
+
+#python3 ../../GeCA/VinDr_Mammo_Preprocessing/customize_csv.py annotations.csv ../findings/Mammomat_Mass.csv --columns image_id finding_categories xmin ymin xmax ymax finding_idx model split --conditions model=Mammomat\ Inspiration finding_categories=Mass --findings

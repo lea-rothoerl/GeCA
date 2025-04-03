@@ -91,9 +91,9 @@ KID values are expressed as 1e-3. Models are trained and evaluated with classifi
     ```sh
     CUDA_VISIBLE_DEVICES=0 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --data-path data/oct_multilabel/ --features-path store/oct_features/ --global-batch-size 128 --fold 0
     ```
-    **Lea's Command (Lesions)**:
+    **Lea's Command (Findings)**:
     ```sh
-    CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --data-path /home/lea_urv/lesions_png/ --features-path /home/lea_urv/lesions_features/training/ --global-batch-size 128 --fold 0
+    CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --image-root /home/lea_urv/images/findings/png/ --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv --features-path /home/lea_urv/images/findings/features/ --global-batch-size 128 
     ```
     **Lea's Command (Full Field)**:
     ```sh

@@ -6,28 +6,43 @@ from torch.utils.data import Dataset
 import pandas as pd
 
 class MammoDataset(Dataset):
-    def __init__(self, root: str, annotation_csv: str, transform=None):
+    def __init__(self, root: str, annotation_path: str, transform=None, mode='training'):
         """
         Args:
             root (str): Path to the folder containing images.
-            annotation_csv (str): Path to the CSV file containing image metadata and labels.
+            annotation_path (str): Path to the CSV file containing image metadata and labels.
             transform: Optional image transformations.
+            mode (str): The dataset mode ('training', 'test', or 'val'). Filters data accordingly.
         """
         super(MammoDataset, self).__init__()
         self.root = root
         self.transform = transform
 
         # get annotation csv
-        self.annotations = pd.read_csv(annotation_csv)
+        self.annotations = pd.read_csv(annotation_path)
+
+        # DEBUG
+        #for image_id in self.annotations["image_id"].head(10):
+        #    img_path = os.path.join(self.root, f"{image_id}")
+        #    print(f"Checking: {img_path} - Exists? {os.path.exists(img_path)}")
+
+
+        # filter dataset by mode (split)
+        if mode not in ["training", "test", "val"]:
+            raise ValueError(f"Invalid mode '{mode}'. Choose from 'training', 'test', or 'val'.")
+    
+        self.annotations["split"] = self.annotations["split"].astype(str).str.lower().str.strip()
+        self.annotations = self.annotations[self.annotations["split"] == mode.lower()]
+
 
         # create full image paths based on CSV image_id column
         self.image_paths = [
-            os.path.join(root, f"{image_id}.png") for image_id in self.annotations["image_id"]
+            os.path.join(root, f"{image_id}") for image_id in self.annotations["image_id"]
         ]
         
         # some debugging
-        self.annotations = self.annotations[self.annotations["image_id"].apply(lambda x: os.path.exists(os.path.join(root, f"{x}.png")))]
-        self.image_paths = [os.path.join(root, f"{image_id}.png") for image_id in self.annotations["image_id"]]
+        self.annotations = self.annotations[self.annotations["image_id"].apply(lambda x: os.path.exists(os.path.join(root, f"{x}")))]
+        self.image_paths = [os.path.join(root, f"{image_id}") for image_id in self.annotations["image_id"]]
         
         # mapping labels
         self.label_dict = self._create_label_mapping()
