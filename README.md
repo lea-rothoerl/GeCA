@@ -93,7 +93,8 @@ KID values are expressed as 1e-3. Models are trained and evaluated with classifi
     ```
     **Lea's Command (Findings)**:
     ```sh
-    CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --image-root /home/lea_urv/images/findings/png/ --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv --features-path /home/lea_urv/images/findings/features/ --global-batch-size 128 
+    CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/images/findings/features/ --global-batch-size 32 --epochs 5000 --fold 5 --num-classes 8 --validate_every 50 --image-root /home/lea_urv/images/findings/png/ --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv --results-dir /home/lea_urv/images/findings/weights --image-size 64 --num-workers 2
+    - confused-blaze-11 first one with this setup
     ```
     **Lea's Command (Full Field)**:
     ```sh
@@ -106,6 +107,9 @@ KID values are expressed as 1e-3. Models are trained and evaluated with classifi
     ```
     **Lea's Command (Lesions)**:
     ```sh
+    CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --features-path /home/lea_urv/images/findings/features/ --global-batch-size 32 --epochs 5000 --fold 0 --num-classes 11 --validate_every 50 --image-root /home/lea_urv/images/findings/png/ --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv --results-dir home/lea_urv/images/findings/weights --image-size 64 --num-workers 2
+    
+    # OLD
     CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/lesions_features/training --global-batch-size 32 --epochs 5000 --fold 0 --num-classes 11 --validate_every 50 --data-path /home/lea_urv/lesions_png/ --results-dir ../results_lesions_GeCA/ --image-size 128 --num-workers 2
     ```
     **Lea's Command (Full Field)**:

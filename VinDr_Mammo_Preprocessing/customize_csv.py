@@ -1,6 +1,7 @@
 import pandas as pd
 import argparse
 import os
+from sklearn.model_selection import StratifiedKFold
 
 def filter_csv(input_csv, output_csv, columns, conditions, findings_flag):
     """
@@ -11,7 +12,7 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag):
         output_csv (str): Path to save the filtered CSV file.
         columns (list): List of column names to include in the output.
         conditions (list): List of conditions to filter rows (e.g., "laterality=R").
-        findings_flag (bool): Whether to generate finding-based filenames.
+        findings (bool): Whether to generate finding-based filenames.
     """
     df = pd.read_csv(input_csv)
 
@@ -40,16 +41,37 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag):
     # keep only requested columns
     df = df[columns]
 
+    # adding 5-fold column
+    df["fold"] = float("nan") 
+
+    train_df = df[df["split"] == "training"].copy()
+
+    # stratified 5-Fold split to maintain class distribution
+    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    
+    for fold_idx, (_, val_idx) in enumerate(skf.split(train_df, train_df["finding_categories"])):
+        train_df.iloc[val_idx, train_df.columns.get_loc("fold")] = fold_idx  
+
+    # split 5% validation off of training set
+    val_subset = train_df.sample(frac=0.05, random_state=42) 
+    train_df.loc[val_subset.index, "split"] = "val"  
+    train_df.loc[val_subset.index, "fold"] = float("nan")
+
+
+    # merge modified training back into main df
+    df = df.merge(train_df[["image_id", "split", "fold"]], on="image_id", how="left", suffixes=("", "_new"))
+    
+    # overwrite original split and fold columns 
+    df["split"] = df["split_new"].combine_first(df["split"])
+    df["fold"] = df["fold_new"].combine_first(df["fold"])
+    df.drop(columns=["split_new", "fold_new"], inplace=True)
+
     # if --findings flag is set, modify filenames
     if findings_flag:
-        finding_filenames = []
-        for _, row in df.iterrows():
-            image_id = row["image_id"]
-            finding_idx = row["finding_idx"]
-            finding_filename = f"{image_id}_lesion_{finding_idx}.png"
-            finding_filenames.append(finding_filename)
+        df["image_id"] = df.apply(lambda row: f"{row['image_id']}_lesion_{row['finding_idx']}.png", axis=1)
 
-        df["image_id"] = finding_filenames
+    else:
+        df["image_id"] = df["image_id"] + ".png"
 
     # save customized CSV
     df.to_csv(output_csv, index=False)

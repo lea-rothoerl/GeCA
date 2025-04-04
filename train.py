@@ -225,10 +225,10 @@ def main(args):
     ])
 
     val_dataset = MammoDataset(
-        root=args.image_root, 
-        transform=transform, 
-        mode='test', 
-        annotation_path=args.annotation_path
+        root=args.image_root,  
+        annotation_path=args.annotation_path,  
+        mode='val', 
+        transform=transform
     )
 
 
@@ -256,7 +256,11 @@ def main(args):
 
         ])
 
-        dataset = MammoDataset(root=args.image_root, transform=train_transform, mode='train')
+        dataset = MammoDataset(
+            root=args.image_root,  
+            annotation_path=args.annotation_path,  
+            mode='training', 
+            transform=transform)
 
     loader = DataLoader(
         dataset,
