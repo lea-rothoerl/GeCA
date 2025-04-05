@@ -57,7 +57,6 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag):
     train_df.loc[val_subset.index, "split"] = "val"  
     train_df.loc[val_subset.index, "fold"] = float("nan")
 
-
     # merge modified training back into main df
     df = df.merge(train_df[["image_id", "split", "fold"]], on="image_id", how="left", suffixes=("", "_new"))
     
