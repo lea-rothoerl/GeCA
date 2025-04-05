@@ -22,11 +22,6 @@ def crop_borders(image_array, threshold=10):
     
     # black out info
     rem_info = image_array.copy()
-    h, w = rem_info.shape
-    rem_info[:45, :80] = 0       # top left
-    rem_info[:45, w-80:w] = 0    # top right
-    rem_info[h-45:h, :80] = 0    # bottom left
-    rem_info[h-45:h, w-80:w] = 0 # bottom right
     rem_info[rem_info > white_threshold] = 0
 
     # binary mask for above and below threshold
@@ -113,13 +108,13 @@ def dicom_to_png(dicom_path, output_path, target_size=(512, 512), apply_resize=T
     except Exception as e:
         print(f"Error processing {dicom_path}: {e}")
 
-def extract_lesions(dicom_path, annotations_df, output_root, target_size=(512, 512), apply_resize=True):
+def extract_findings(dicom_path, annotations_df, output_root, target_size=(512, 512), apply_resize=True):
     """
-    Extract lesion regions from a DICOM image based on bounding boxes provided in annotations_df.
+    Extract finding regions from a DICOM image based on bounding boxes provided in annotations_df.
     
     The CSV (finding_annotations.csv) must include at least the following columns:
       image_id, study_id, xmin, ymin, xmax, ymax
-    Each lesion is saved as a separate PNG in output_root/<study_id>/lesions/.
+    Each finding is saved as a separate PNG in output_root/<study_id>/findings/.
     """
     try:
         dicom_image = pydicom.dcmread(dicom_path)
@@ -135,11 +130,11 @@ def extract_lesions(dicom_path, annotations_df, output_root, target_size=(512, 5
         # get image ID from the filename
         image_id = os.path.splitext(os.path.basename(dicom_path))[0]
         # get annotations for respective ID
-        lesion_rows = annotations_df[annotations_df['image_id'] == image_id]
+        finding_rows = annotations_df[annotations_df['image_id'] == image_id]
 
-        # process each single lesion
-        for idx, row in lesion_rows.iterrows():
-            # handle images without lesions
+        # process each single finding
+        for idx, row in finding_rows.iterrows():
+            # handle images without findings
             if pd.isnull(row[['xmin', 'ymin', 'xmax', 'ymax']]).any():
                 continue 
         
@@ -148,34 +143,29 @@ def extract_lesions(dicom_path, annotations_df, output_root, target_size=(512, 5
             xmax = int(row['xmax'])
             ymax = int(row['ymax'])
 
-            # extract lesions using annotation bounding boxes
-            lesion_region = image_array[ymin:ymax, xmin:xmax]
-            lesion_img = Image.fromarray(lesion_region)
+            # extract findings using annotation bounding boxes
+            finding_region = image_array[ymin:ymax, xmin:xmax]
+            finding_img = Image.fromarray(finding_region)
 
             if apply_resize:
-                lesion_img = resize_with_padding(lesion_img, target_size=target_size)
+                finding_img = resize_with_padding(finding_img, target_size=target_size)
 
-            # grab study_id from the CSV for output folder
-            #study_id = str(row['study_id'])
-            #lesion_out_dir = os.path.join(output_root, study_id, "lesions")
-            #os.makedirs(lesion_out_dir, exist_ok=True)
-            lesion_filename = f"{image_id}_lesion_{idx}.png"
-            #lesion_out_path = os.path.join(lesion_out_dir, lesion_filename)
-            lesion_out_path = os.path.join(output_root, lesion_filename)
-            lesion_img.save(lesion_out_path)
-            print(f"Extracted lesion: {lesion_out_path}")
+            finding_filename = f"{image_id}_finding_{idx}.png"
+            finding_out_path = os.path.join(output_root, finding_filename)
+            finding_img.save(finding_out_path)
+            print(f"Extracted finding: {finding_out_path}")
 
     # catch exceptions
     except Exception as e:
-        print(f"Error extracting lesions from {dicom_path}: {e}")
+        print(f"Error extracting findings from {dicom_path}: {e}")
 
-def process_dicom_folder(input_root, output_root, target_size=(512, 512), apply_resize=False, lesions_flag=False, annotations_df=None):
+def process_dicom_folder(input_root, output_root, target_size=(512, 512), apply_resize=False, findings_flag=False, annotations_df=None):
     """
     Process all DICOM images in subfolders, converting them to PNG.
     
     If apply_resize is True, each image is resized (with padding) to target_size.
-    If lesions_flag is False, converts full DICOM images to PNG (cropped/resized as specified).
-    If True, extracts lesion regions based on bounding boxes from annotations_df.
+    If findings_flag is False, converts full DICOM images to PNG (cropped/resized as specified).
+    If True, extracts finding regions based on bounding boxes from annotations_df.
 
     Also copies index.html files.
     """
@@ -183,8 +173,8 @@ def process_dicom_folder(input_root, output_root, target_size=(512, 512), apply_
         for file in files:
             input_file_path = os.path.join(subdir, file)
             if file.lower().endswith(".dicom"):
-                if lesions_flag:
-                    extract_lesions(input_file_path, annotations_df, output_root, target_size=target_size, apply_resize=apply_resize)
+                if findings_flag:
+                    extract_findings(input_file_path, annotations_df, output_root, target_size=target_size, apply_resize=apply_resize)
                 else:        
                     relative_path = os.path.relpath(subdir, input_root)
                     output_subdir = os.path.join(output_root, relative_path)
@@ -194,7 +184,7 @@ def process_dicom_folder(input_root, output_root, target_size=(512, 512), apply_
                     os.makedirs(output_subdir, exist_ok=True)
                     output_file_path = os.path.join(output_subdir, os.path.splitext(file)[0] + ".png")
                     dicom_to_png(input_file_path, output_file_path, target_size=target_size, apply_resize=apply_resize)
-            elif file == "index.html" and not lesions_flag:
+            elif file == "index.html" and not findings_flag:
                 relative_path = os.path.relpath(subdir, input_root)
                 output_subdir = os.path.join(output_root, relative_path)
                 shutil.copy(input_file_path, output_subdir)
@@ -207,16 +197,16 @@ if __name__ == "__main__":
     parser.add_argument("out_folder", help="Path to the output folder for PNG images.")
     parser.add_argument("--resize", action="store_true", 
                         help="Apply resizing with padding to a uniform target size.")
-    parser.add_argument("--lesions", action="store_true", 
-                        help="Extract lesions based on finding_annotations.csv.")    
+    parser.add_argument("--findings", action="store_true", 
+                        help="Extract findings based on finding_annotations.csv.")    
     parser.add_argument("--annotations", type=str, default=None, 
-                        help="Path to the CSV file for lesion annotations.")
+                        help="Path to the CSV file for finding annotations.")
     
     args = parser.parse_args()
 
-    # load annotation CSV for lesion extraction
+    # load annotation CSV for finding extraction
     annotations_df = None
-    if args.lesions:
+    if args.findings:
         try:
             annotations_df = pd.read_csv(args.annotations) 
             print("Loaded finding_annotations.csv")
@@ -226,7 +216,7 @@ if __name__ == "__main__":
 
     process_dicom_folder(args.in_folder, args.out_folder,
                          apply_resize=args.resize,
-                         lesions_flag=args.lesions,
+                         findings_flag=args.findings,
                          annotations_df=annotations_df)
 
     print("Done!")
