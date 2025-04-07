@@ -136,10 +136,13 @@ KID values are expressed as 1e-3. Models are trained and evaluated with classifi
 
 2. Evaluate generated images:
     ```sh
-    python evaluate.py --fold 0 --image-size 256 --device_list cuda:0 --real ./oct_multilabel/ --gen ./synthetic_oct/GeCA-S-GS-fold-0-nstep-250-best_ckpt-size-256-vae-ema-cfg-1.5-seed-0/
+    python evaluate.py --fold 0 --image-size 64 --device_list cuda:1 --real ./oct_multilabel/ --gen ./synthetic_oct/GeCA-S-GS-fold-0-nstep-250-best_ckpt-size-256-vae-ema-cfg-1.5-seed-0/
     ```
     **Lea's Command (Lesions)**
     ```sh
+    python evaluate.py --fold 5 --image-size 256 --device_list cuda:1 --image-root /home/lea_urv/images/findings/png/ --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv --gen /home/lea_urv/images/findings/synthetic/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-256-vae-ema-cfg-1.5-seed-0/
+    
+    # OLD
     python evaluate.py --fold 0 --image-size 256 --device_list cuda:0 --real /home/lea_urv/lesions_png/ --gen ../synthetic_lesions/GeCA-S-GS-fold-0-nstep-250-best_ckpt-size-256-vae-ema-cfg-1.5-seed-0/
     ```
     **Lea's Command (Full Field)**

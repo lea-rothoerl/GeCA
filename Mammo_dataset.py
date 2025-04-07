@@ -13,19 +13,15 @@ class MammoDataset(Dataset):
             annotation_path (str): Path to the CSV file containing image metadata and labels.
             transform: Optional image transformations.
             mode (str): The dataset mode ('training', 'test', or 'val'). Filters data accordingly.
+            label_column (str): Name of the column to be used for labels (default: 'finding_categories').
         """
         super(MammoDataset, self).__init__()
         self.root = root
         self.transform = transform
+        self.label_column = label_column
 
         # get annotation csv
         self.annotations = pd.read_csv(annotation_path)
-
-        # DEBUG
-        #for image_id in self.annotations["image_id"].head(10):
-        #    img_path = os.path.join(self.root, f"{image_id}")
-        #    print(f"Checking: {img_path} - Exists? {os.path.exists(img_path)}")
-
 
         # filter dataset by mode (split)
         if mode not in ["training", "test", "val"]:
@@ -33,12 +29,6 @@ class MammoDataset(Dataset):
     
         self.annotations["split"] = self.annotations["split"].astype(str).str.lower().str.strip()
         self.annotations = self.annotations[self.annotations["split"] == mode.lower()]
-
-
-        # create full image paths based on CSV image_id column
-        self.image_paths = [
-            os.path.join(root, f"{image_id}") for image_id in self.annotations["image_id"]
-        ]
         
         # some debugging
         self.annotations = self.annotations[self.annotations["image_id"].apply(lambda x: os.path.exists(os.path.join(root, f"{x}")))]
@@ -50,6 +40,7 @@ class MammoDataset(Dataset):
         self.label_to_index = {label: idx for idx, label in enumerate(self.all_labels)}
 
         print(f"Total images: {len(self.image_paths)}")
+        print(f"Using label column: {self.label_column}")
         print(f"All unique labels: {self.all_labels}")
 
     def _create_label_mapping(self):
@@ -57,7 +48,20 @@ class MammoDataset(Dataset):
         label_dict = {}
         for _, row in self.annotations.iterrows():
             image_id = row["image_id"]
-            labels = eval(row["finding_categories"]) if isinstance(row["finding_categories"], str) else []
+            #labels = eval(row["finding_categories"]) if isinstance(row["finding_categories"], str) else []
+            #label_dict[image_id] = labels
+            raw_label = row.get(self.label_column)
+
+            if isinstance(raw_label, str):
+                try:
+                    labels = eval(raw_label) if raw_label.startswith("[") else [raw_label]
+                except:
+                    labels = [raw_label]
+            elif pd.isna(raw_label):
+                labels = []
+            else:
+                labels = [str(raw_label)]
+
             label_dict[image_id] = labels
         return label_dict
 
