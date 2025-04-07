@@ -57,35 +57,6 @@ def create_npz_from_sample_folder(sample_dir, num=50_000):
     print(f"Saved .npz file to {npz_path} [shape={samples.shape}].")
     return npz_path
 
-
-
-class CustomDataset(Dataset):
-    def __init__(self, labels_dir, mode='train', fold=0, multi_class=False):
-
-        self.datapath = Path(labels_dir)
-  
-        self.mammo_dataset = MammoDataset(root=labels_dir, mode=mode, transform=None)
-        self.label = self.mammo_dataset.get_mapped_labels()
-
-    def get_mapped_labels(self, df=None, dataset_path=None):
-        if hasattr(self, "mammo_dataset"):  
-            return self.mammo_dataset.get_mapped_labels()
-        
-        if self.multi_class:
-            return list(df[self.bin_column].values)
-        else:
-            raise Exception("Dataset label mapping not defined for this case.")
-
-    def __len__(self):
-        return len(self.label)
-
-    def __getitem__(self, idx):
-        label_file = self.label[idx] 
-        label_array = np.array(label_file, dtype=np.float32)
-        
-        return 0, torch.from_numpy(label_array)
-
-
 def main(args):
     """
     Run sampling.
@@ -160,12 +131,29 @@ def main(args):
     # total_samples = int(math.ceil(args.num_fid_samples / global_batch_size) * global_batch_size)
 
     # Setup data:
-    dataset = CustomDataset(args.annotation_path, mode='test', fold=args.fold)
-    temp_dataset = MammoDataset(root=args.image_root, mode='training', transform=None)
-    labels_name = temp_dataset.all_labels
+    #dataset = MammoDataset(root=args.image_root, 
+    #                       annotation_path=args.annotation_path, 
+    #                       mode='test')
+    temp_dataset = MammoDataset(root=args.image_root, 
+                                annotation_path=args.annotation_path, 
+                                mode='training', 
+                                transform=None)
+
+    full_labels = temp_dataset.all_labels
+    full_label_to_index = temp_dataset.label_to_index
+
+    sampling_dataset = MammoDataset(
+        root=args.image_root,
+        annotation_path=args.annotation_path,
+        mode='test'
+    )
+
+    # DEBUG
+    sampling_dataset.all_labels = full_labels
+    sampling_dataset.label_to_index = full_label_to_index
 
     loader = DataLoader(
-        dataset,
+        sampling_dataset,
         batch_size=int(args.per_proc_batch_size),
         shuffle=False,
         num_workers=4,
@@ -178,7 +166,7 @@ def main(args):
     dict_pd = []
 
     def update_label(diction, labl):
-        for name, label in zip(labels_name,
+        for name, label in zip(full_labels,
                                labl):
             diction[name] = int(label)
 
@@ -192,9 +180,8 @@ def main(args):
 
     for _ in range(args.expand_ratio):
         for _, labl in loader:
-
             labl = labl.to(device).float()
-            labl = labl.squeeze(dim=1)  # B X 4
+            labl = labl.squeeze(dim=1)  # B X 4 (or whatever the shape is)
 
             z = torch.randn(labl.size(0), model.in_channels, latent_size, latent_size, device=device)
 
@@ -221,15 +208,11 @@ def main(args):
 
             if not args.image_space:
                 samples = vae.decode(samples / 0.18215).sample
-                samples = torch.clamp(127.5 * samples + 128.0, 0, 255).permute(0, 2, 3, 1).to("cpu",
-                                                                                              dtype=torch.uint8).numpy()
+                samples = torch.clamp(127.5 * samples + 128.0, 0, 255).permute(0, 2, 3, 1).to("cpu", dtype=torch.uint8).numpy()
             else:
                 samples = (samples + 1.0) * 0.5
                 samples = (samples * 255).to(device, dtype=torch.uint8)
 
-            # samples = vae.decode(samples / 0.18215).sample
-            # samples = torch.clamp(127.5 * samples + 128.0, 0, 255).permute(0, 2, 3, 1).to("cpu",
-            #                                                                               dtype=torch.uint8).numpy()
             label = labl.cpu().numpy()
             annotations = label if annotations is None else np.concatenate([annotations, label], axis=0)
 
@@ -239,7 +222,7 @@ def main(args):
                 index = i * dist.get_world_size() + rank + total
                 dict_client_img['client_id'] = 'syn_' + str(index)
                 dict_client_img['filename'] = os.path.join('gen_samples_val', f"{index:06d}.png")
-                dict_client_img = update_label(dict_client_img, label[i])
+                dict_client_img = update_label(dict_client_img, label[i])  # Use the labels from your data
                 dict_client_img['patient_name'] = index
                 dict_pd.append(dict_client_img)
 
@@ -251,7 +234,7 @@ def main(args):
     if rank == 0:
         # create_npz_from_sample_folder(sample_folder_dir, args.num_fid_samples)
         df = pd.DataFrame(dict_pd)
-        multi_label_list = df[labels_name].values
+        multi_label_list = df[full_labels].values
         df['multi_class_label'] = get_new_labels(multi_label_list)
         df.to_csv(os.path.join(sample_folder_dir, f'val_syn_{args.fold}.csv'))
 
