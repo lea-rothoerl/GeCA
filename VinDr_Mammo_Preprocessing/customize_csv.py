@@ -76,6 +76,11 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag):
     df.to_csv(output_csv, index=False)
     print(f"Customized CSV saved as {output_csv}")
 
+    print("\nImage counts per split:")
+    split_counts = df["split"].value_counts()
+    for split, count in split_counts.items():
+        print(f"  {split.capitalize()}: {count} images")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate custom CSV from annotations.")
     parser.add_argument("input_csv", help="Path to the input CSV file (annotations.csv).")
