@@ -137,7 +137,8 @@ def main(args):
     temp_dataset = MammoDataset(root=args.image_root, 
                                 annotation_path=args.annotation_path, 
                                 mode='training', 
-                                transform=None)
+                                transform=None,
+                                label_column='finding_categories')
 
     full_labels = temp_dataset.all_labels
     full_label_to_index = temp_dataset.label_to_index
@@ -145,7 +146,8 @@ def main(args):
     sampling_dataset = MammoDataset(
         root=args.image_root,
         annotation_path=args.annotation_path,
-        mode='test'
+        mode='test',
+        label_column='finding_categories'
     )
 
     # DEBUG
@@ -266,6 +268,7 @@ if __name__ == "__main__":
     parser.add_argument("--image-root", type=str, required=True)
     parser.add_argument("--annotation-path", type=str, required=True)
     parser.add_argument("--fold", type=int, default=0)
+    parser.add_argument("--label_column", type=str, default="finding_categories")
     parser.add_argument("--expand_ratio", type=int, default=1)
     parser.add_argument("--image_space", action='store_true', default=False)
 
