@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 import pandas as pd
 
 class MammoDataset(Dataset):
-    def __init__(self, root: str, annotation_path: str, transform=None, mode='training'):
+    def __init__(self, root: str, annotation_path: str, transform=None, mode='training', label_column='finding_categories'):
         """
         Args:
             root (str): Path to the folder containing images.

@@ -75,6 +75,7 @@ if __name__ == "__main__":
     parser.add_argument('--device_list', nargs='+', default='cuda:0', help='List of device(s) to use.')
     parser.add_argument("--image-size", type=int, choices=[128, 256, 512], default=256)
     parser.add_argument("--fold", type=int, default=0)
+    parser.add_argument("--label_column", type=str, default="finding_categories")
     parser.add_argument('--gg_extractor', type=str, default='dino', help='feature extractor to use')
 
     parser.add_argument('--ft', type=str, help='Path to feature extractor')
@@ -91,7 +92,7 @@ if __name__ == "__main__":
     )
 
     # TODO
-    real_images_dir = os.path.join(args.image-root, 'test')
+    real_images_dir = os.path.join(args.image_root, 'test')
     real_imgs = [os.path.join(real_images_dir, filename) for filename in 
                  os.listdir(real_images_dir) if filename.endswith('.png')]
 
@@ -111,12 +112,15 @@ if __name__ == "__main__":
         root=args.image_root, 
         transform=tf.Compose([tf.ToPILImage()]), 
         mode='training', 
-        annotation_path=args.annotation_path)
+        annotation_path=args.annotation_path,
+        label_column=args.label_column)
+    
     dataset_test = MammoDataset(
         root=args.image_root, 
         transform=tf.Compose([tf.ToPILImage()]), 
         mode='test', 
-        annotation_path=args.annotation_path)
+        annotation_path=args.annotation_path,
+        label_column=args.label_column)
 
     train_feat = feature_extractor.get_features(dataset_real)
     test_feat = feature_extractor.get_features(dataset_test)

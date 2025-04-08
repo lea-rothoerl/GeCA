@@ -228,7 +228,8 @@ def main(args):
         root=args.image_root,  
         annotation_path=args.annotation_path,  
         mode='val', 
-        transform=transform
+        transform=transform,
+        label_column='finding_categories'
     )
 
 
@@ -260,7 +261,8 @@ def main(args):
             root=args.image_root,  
             annotation_path=args.annotation_path,  
             mode='training', 
-            transform=transform)
+            transform=transform,
+            label_column='finding_categories')
 
     loader = DataLoader(
         dataset,
@@ -482,6 +484,7 @@ if __name__ == "__main__":
     parser.add_argument("--validate_every", type=int, default=10)
     parser.add_argument("--val_samples", type=int, default=24)
     parser.add_argument("--fold", type=int, default=5)
+    parser.add_argument("--label_column", type=str, default="finding_categories")
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--in_channels", type=int, default=4)
 
