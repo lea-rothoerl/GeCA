@@ -92,9 +92,14 @@ if __name__ == "__main__":
     )
 
     # TODO
-    real_images_dir = os.path.join(args.image_root, 'test')
-    real_imgs = [os.path.join(real_images_dir, filename) for filename in 
-                 os.listdir(real_images_dir) if filename.endswith('.png')]
+    #real_images_dir = os.path.join(args.image_root, 'test')
+    #real_imgs = [os.path.join(real_images_dir, filename) for filename in 
+    #             os.listdir(real_images_dir) if filename.endswith('.png')]
+    real_df = pd.read_csv(args.annotation_path)
+    real_df = real_df[real_df['split'].str.lower() == 'test']
+    real_imgs = [os.path.join(args.image_root, img_id) for img_id in real_df['image_id'].values]
+    real_imgs = [p for p in real_imgs if os.path.exists(p)]
+
 
     synthpath = Path(args.gen) / f'val_syn_{args.fold}.csv'
     dataset_synth = pd.read_csv(synthpath, index_col=0)
