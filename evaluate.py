@@ -73,7 +73,7 @@ if __name__ == "__main__":
     parser.add_argument("--annotation-path", type=str, required=True)
     parser.add_argument('--gen', type=str, help='Path to generated images')
     parser.add_argument('--device_list', nargs='+', default='cuda:0', help='List of device(s) to use.')
-    parser.add_argument("--image-size", type=int, choices=[128, 256, 512], default=256)
+    parser.add_argument("--image-size", type=int, choices=[64, 128, 256, 512], default=256)
     parser.add_argument("--fold", type=int, default=0)
     parser.add_argument("--label_column", type=str, default="finding_categories")
     parser.add_argument('--gg_extractor', type=str, default='dino', help='feature extractor to use')

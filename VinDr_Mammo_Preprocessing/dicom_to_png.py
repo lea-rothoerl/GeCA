@@ -39,7 +39,7 @@ def crop_borders(image_array, threshold=10):
     # crop to these boundaries
     return image_array[y0:y1+1, x0:x1+1]
 
-def resize_with_padding(image, target_size=(512, 512)):
+def resize_with_padding(image, target_size=(64, 64)):
     """
     Resize image and pad to target_size.
     
@@ -69,7 +69,7 @@ def resize_with_padding(image, target_size=(512, 512)):
     
     return new_image
 
-def dicom_to_png(dicom_path, output_path, target_size=(512, 512), apply_resize=True):
+def dicom_to_png(dicom_path, output_path, target_size=(64, 64), apply_resize=True):
     """
     Convert DICOM image to PNG and crop it to a desired target size.
     
@@ -101,20 +101,23 @@ def dicom_to_png(dicom_path, output_path, target_size=(512, 512), apply_resize=T
             image = resize_with_padding(image, target_size=target_size)
 
         # save the output PNG
-        image.save(output_path)
-        print(f"Processed: {dicom_path} → {output_path}")
+        image_id = os.path.splitext(os.path.basename(dicom_path))[0]
+        filename = f"{image_id}.png"
+        out_path = os.path.join(output_path, filename)
+        image.save(out_path)
+        print(f"Processed: {dicom_path} → {out_path}")
 
     # catch exceptions
     except Exception as e:
         print(f"Error processing {dicom_path}: {e}")
 
-def extract_findings(dicom_path, annotations_df, output_root, target_size=(512, 512), apply_resize=True):
+def extract_findings(dicom_path, annotations_df, output_path, target_size=(64, 64), apply_resize=True):
     """
     Extract finding regions from a DICOM image based on bounding boxes provided in annotations_df.
     
     The CSV (finding_annotations.csv) must include at least the following columns:
       image_id, study_id, xmin, ymin, xmax, ymax
-    Each finding is saved as a separate PNG in output_root/<study_id>/findings/.
+    Each finding is saved as a separate PNG in output_path/<study_id>/findings/.
     """
     try:
         dicom_image = pydicom.dcmread(dicom_path)
@@ -151,7 +154,7 @@ def extract_findings(dicom_path, annotations_df, output_root, target_size=(512, 
                 finding_img = resize_with_padding(finding_img, target_size=target_size)
 
             finding_filename = f"{image_id}_finding_{idx}.png"
-            finding_out_path = os.path.join(output_root, finding_filename)
+            finding_out_path = os.path.join(output_path, finding_filename)
             finding_img.save(finding_out_path)
             print(f"Extracted finding: {finding_out_path}")
 
@@ -159,7 +162,7 @@ def extract_findings(dicom_path, annotations_df, output_root, target_size=(512, 
     except Exception as e:
         print(f"Error extracting findings from {dicom_path}: {e}")
 
-def process_dicom_folder(input_root, output_root, target_size=(512, 512), apply_resize=False, findings_flag=False, annotations_df=None):
+def process_dicom_folder(input_root, output_path, target_size=(64, 64), apply_resize=False, findings_flag=False, annotations_df=None):
     """
     Process all DICOM images in subfolders, converting them to PNG.
     
@@ -174,20 +177,9 @@ def process_dicom_folder(input_root, output_root, target_size=(512, 512), apply_
             input_file_path = os.path.join(subdir, file)
             if file.lower().endswith(".dicom"):
                 if findings_flag:
-                    extract_findings(input_file_path, annotations_df, output_root, target_size=target_size, apply_resize=apply_resize)
-                else:        
-                    relative_path = os.path.relpath(subdir, input_root)
-                    output_subdir = os.path.join(output_root, relative_path)
-                    if os.path.exists(output_subdir) and not os.path.isdir(output_subdir):
-                        print(f"Warning: {output_subdir} exists but is not a directory. Deleting it.")
-                        os.remove(output_subdir)  
-                    os.makedirs(output_subdir, exist_ok=True)
-                    output_file_path = os.path.join(output_subdir, os.path.splitext(file)[0] + ".png")
-                    dicom_to_png(input_file_path, output_file_path, target_size=target_size, apply_resize=apply_resize)
-            elif file == "index.html" and not findings_flag:
-                relative_path = os.path.relpath(subdir, input_root)
-                output_subdir = os.path.join(output_root, relative_path)
-                shutil.copy(input_file_path, output_subdir)
+                    extract_findings(input_file_path, annotations_df, output_path, target_size=target_size, apply_resize=apply_resize)
+                else: 
+                    dicom_to_png(input_file_path, output_path, target_size=target_size, apply_resize=apply_resize)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -201,6 +193,8 @@ if __name__ == "__main__":
                         help="Extract findings based on finding_annotations.csv.")    
     parser.add_argument("--annotations", type=str, default=None, 
                         help="Path to the CSV file for finding annotations.")
+    parser.add_argument("--target-size", type=str, default=(64, 64),
+                        help="Target size for resizing images (width, height).")
     
     args = parser.parse_args()
 
