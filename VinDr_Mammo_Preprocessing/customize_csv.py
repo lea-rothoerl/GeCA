@@ -67,7 +67,7 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag):
 
     # if --findings flag is set, modify filenames
     if findings_flag:
-        df["image_id"] = df.apply(lambda row: f"{row['image_id']}_lesion_{row['finding_idx']}.png", axis=1)
+        df["image_id"] = df.apply(lambda row: f"{row['image_id']}_finding_{row['finding_idx']}.png", axis=1)
 
     else:
         df["image_id"] = df["image_id"] + ".png"

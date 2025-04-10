@@ -191,7 +191,7 @@ def main(args):
         np.save(f'{args.features_path}/labels_{args.fold}/{train_steps}.npy', y)
 
         train_steps += 1
-        print(train_steps)
+        #print(train_steps)
 
 
 if __name__ == "__main__":
