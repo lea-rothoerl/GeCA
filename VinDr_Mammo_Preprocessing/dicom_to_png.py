@@ -39,7 +39,7 @@ def crop_borders(image_array, threshold=10):
     # crop to these boundaries
     return image_array[y0:y1+1, x0:x1+1]
 
-def resize_with_padding(image, target_size=(256, 256)):
+def resize_with_padding(image, target_size=(128, 128)):
     """
     Resize image and pad to target_size.
     
@@ -69,7 +69,7 @@ def resize_with_padding(image, target_size=(256, 256)):
     
     return new_image
 
-def dicom_to_png(dicom_path, output_path, target_size=(256, 256), apply_resize=True):
+def dicom_to_png(dicom_path, output_path, target_size=(128, 128), apply_resize=True):
     """
     Convert DICOM image to PNG and crop it to a desired target size.
     
@@ -111,7 +111,7 @@ def dicom_to_png(dicom_path, output_path, target_size=(256, 256), apply_resize=T
     except Exception as e:
         print(f"Error processing {dicom_path}: {e}")
 
-def extract_findings(dicom_path, annotations_df, output_path, target_size=(256, 256), apply_resize=True):
+def extract_findings(dicom_path, annotations_df, output_path, target_size=(128, 128), apply_resize=True):
     """
     Extract finding regions from a DICOM image based on bounding boxes provided in annotations_df.
     
@@ -162,7 +162,7 @@ def extract_findings(dicom_path, annotations_df, output_path, target_size=(256, 
     except Exception as e:
         print(f"Error extracting findings from {dicom_path}: {e}")
 
-def process_dicom_folder(input_root, output_path, target_size=(256, 256), apply_resize=False, findings_flag=False, annotations_df=None):
+def process_dicom_folder(input_root, output_path, target_size=(128, 128), apply_resize=False, findings_flag=False, annotations_df=None):
     """
     Process all DICOM images in subfolders, converting them to PNG.
     
@@ -193,7 +193,7 @@ if __name__ == "__main__":
                         help="Extract findings based on finding_annotations.csv.")    
     parser.add_argument("--annotations", type=str, default=None, 
                         help="Path to the CSV file for finding annotations.")
-    parser.add_argument("--target-size", type=str, default=(256, 256),
+    parser.add_argument("--target-size", type=str, default=(128, 128),
                         help="Target size for resizing images (width, height).")
     
     args = parser.parse_args()

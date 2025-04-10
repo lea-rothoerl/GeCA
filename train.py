@@ -314,13 +314,6 @@ def main(args):
                                                       NCA_model='GeCA' in args.model)
                 loss = loss_dict["loss"].mean()
 
-                # experimenting with regularization
-                with torch.no_grad():
-                    x_noisy = diffusion.q_sample(x, t)
-                pred_x0 = diffusion.predict_start_from_noise(x_noisy, t, model(x_noisy, t, **model_kwargs))
-                recon_loss = F.mse_loss(pred_x0, x)
-                loss = loss + 0.1 * recon_loss
-
                 opt.zero_grad()
                 accelerator.backward(loss)
                 if args.grad_norm:

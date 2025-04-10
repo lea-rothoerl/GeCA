@@ -82,7 +82,7 @@ def main(args):
 
     if args.ckpt is None:
         assert args.model == "DiT-XL/2", "Only DiT-XL/2 models are available for auto-download."
-        assert args.image_size in [64, 256, 512]
+        assert args.image_size in [128, 256, 512]
         assert args.num_classes == 1000
 
     if args.image_space:
@@ -244,7 +244,7 @@ if __name__ == "__main__":
     parser.add_argument("--sample-dir", type=str, default="samples")
     parser.add_argument("--per-proc-batch-size", type=int, default=32)
     parser.add_argument("--num-fid-samples", type=int, default=50_000)
-    parser.add_argument("--image-size", type=int, choices=[256, 512], default=256)
+    parser.add_argument("--image-size", type=int, choices=[128, 256, 512], default=256)
     parser.add_argument("--num-classes", type=int, default=11)
     parser.add_argument("--cfg-scale", type=float, default=1.5)
     parser.add_argument("--num-sampling-steps", type=int, default=250)
