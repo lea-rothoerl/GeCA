@@ -61,60 +61,17 @@ KID values are expressed as 1e-3. Models are trained and evaluated with classifi
     pip install -r req.txt
     ```
 
-### Lea's VinDr-Mammo Preprocessing
-
-1. Dicom to PNG with cropping and padding (Lesions):
-    ```sh
-    python3 VinDr_Mammo_Preprocessing/dicom_to_png.py path/to/input path/to/output --resize --lesions --path/to/annotations_CSV
-    ```
-2. Train test split (Lesions):
-    ```sh
-    python3 VinDr_Mammo_Preprocessing/train_test_split.py /path/to/pngs /path/to/annotations
-    ```
-3. Dicom to PNG with cropping and padding (Full Field):
-    ```sh
-    python3 VinDr_Mammo_Preprocessing/dicom_to_png.py path/to/input path/to/output --resize
-    ```
-2. Necessary splits (Full Field):
-    ```sh
-    nice -n 10 python3 VinDr_Mammo_Preprocessing/full_field_split.py ../fullfield_png/ ../../shared_data/VinDr_Mammo/metadata.csv ../../shared_data/VinDr_Mammo/breast-level_annotations.csv ../fullfield_png_split/
-    ```
-    For reference, sizes of training folders:
-    - Giotto Class: 137
-    - Giotto Image 3DL: 63
-    - Mammomat Inspiration: 3050
-    - Planmed Nuance: 751
 
 ## Training GeCA
 
 1. **Feature Extraction**:
     ```sh
-    CUDA_VISIBLE_DEVICES=0 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --data-path data/oct_multilabel/ --features-path store/oct_features/ --global-batch-size 128 --fold 0
-    ```
-    **Lea's Command (Findings)**:
-    ```sh
-    CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/images/findings/features/ --global-batch-size 32 --epochs 5000 --fold 5 --num-classes 8 --validate_every 50 --image-root /home/lea_urv/images/findings/png/ --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv --results-dir /home/lea_urv/images/findings/weights --image-size 64 --num-workers 2
-    - confused-blaze-11 first one with this setup
-    ```
-    **Lea's Command (Full Field)**:
-    ```sh
-    CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --data-path /home/lea_urv/fullfield_png_split/Mammomat Inspiration/L_CC/ --features-path /home/lea_urv/fullfield_features/Mammomat/L_CC/training/ --global-batch-size 128 --fold 0
+    CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --image-root /home/lea_urv/images/findings/png --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv --features-path /home/lea_urv/images/findings/features --global-batch-size 128 --fold 5
     ```
 
 2. **Model Training**:
     ```sh
-    CUDA_VISIBLE_DEVICES=0,1,2,3 accelerate launch --main_process_port 29504 --multi_gpu --num_processes 4 --mixed_precision fp16 train.py --model GeCA-S --feature-path store/oct_features/ --num-classes 11 --global-batch-size 128 --epochs 14000 --fold 8 --validate_every 700 --data-path data/oct_multilabel/ --results-dir ./results_oct_GeCA/
-    ```
-    **Lea's Command (Lesions)**:
-    ```sh
-    CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --features-path /home/lea_urv/images/findings/features/ --global-batch-size 32 --epochs 5000 --fold 0 --num-classes 11 --validate_every 50 --image-root /home/lea_urv/images/findings/png/ --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv --results-dir home/lea_urv/images/findings/weights --image-size 64 --num-workers 2
-    
-    # OLD
-    CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/lesions_features/training --global-batch-size 32 --epochs 5000 --fold 0 --num-classes 11 --validate_every 50 --data-path /home/lea_urv/lesions_png/ --results-dir ../results_lesions_GeCA/ --image-size 128 --num-workers 2
-    ```
-    **Lea's Command (Full Field)**:
-    ```sh
-    CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/lesions_features/training --global-batch-size 32 --epochs 2000 --fold 0 --num-classes 12 --validate_every 50 --data-path /home/lea_urv/fullfield_png_split/Mammomat Inspiration/L_CC/ --results-dir ../results_lesions_GeCA/ --image-size 128 --num-workers 2
+    CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/images/findings/features/ --global-batch-size 32 --epochs 5000 --fold 5 --num-classes 8 --validate_every 50 --image-root /home/lea_urv/images/findings/png/ --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv --feature-path /home/lea_urv/images/findings/features --results-dir /home/lea_urv/images/findings/weights --image-size 64 --num-workers 2
     ```
 
 ## Evaluating GeCA
@@ -122,7 +79,7 @@ KID values are expressed as 1e-3. Models are trained and evaluated with classifi
     ```sh
     CUDA_VISIBLE_DEVICES=0 torchrun --master-port 29506 --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --data-path oct_multilabel/ --fold 0 --num-sampling-steps 250 --ckpt ./results_oct_GeCA/001-GeCA-S/checkpoints/best_ckpt.pt --sample-dir ./synthetic_oct/
     ```
-    **Lea's Command (Lesions)**
+    **Lea's Command (Findings)**
     ```sh
     CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/findings/png/ --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/findings/weights/004-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/findings/synthetic --num-classes 8
 
@@ -138,16 +95,12 @@ KID values are expressed as 1e-3. Models are trained and evaluated with classifi
     ```sh
     python evaluate.py --fold 0 --image-size 64 --device_list cuda:1 --real ./oct_multilabel/ --gen ./synthetic_oct/GeCA-S-GS-fold-0-nstep-250-best_ckpt-size-256-vae-ema-cfg-1.5-seed-0/
     ```
-    **Lea's Command (Lesions)**
+    **Lea's Command**
     ```sh
-    python evaluate.py --fold 5 --image-size 256 --device_list cuda:1 --image-root /home/lea_urv/images/findings/png/ --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv --gen /home/lea_urv/images/findings/synthetic/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-256-vae-ema-cfg-1.5-seed-0/
+    python evaluate.py --fold 5 --image-size 64 --device_list cuda:1 --image-root /home/lea_urv/images/findings/png/ --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv --gen /home/lea_urv/images/findings/synthetic/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-256-vae-ema-cfg-1.5-seed-0/
     
     # OLD
     python evaluate.py --fold 0 --image-size 256 --device_list cuda:0 --real /home/lea_urv/lesions_png/ --gen ../synthetic_lesions/GeCA-S-GS-fold-0-nstep-250-best_ckpt-size-256-vae-ema-cfg-1.5-seed-0/
-    ```
-    **Lea's Command (Full Field)**
-    ```sh
-    python evaluate.py --fold 0 --image-size 256 --device_list cuda:0 --real /home/lea_urv/fullfield_png_split/Mammomat\ Inspiration/L_CC/ --gen ../synthetic_fullfield/GeCA-S-GS-fold-0-nstep-250-best_ckpt-size-256-vae-ema-cfg-1.5-seed-0/
     ```
 
 
