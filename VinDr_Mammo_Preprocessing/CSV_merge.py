@@ -10,7 +10,7 @@ df2.columns = df2.columns.str.strip()
 df3.columns = df3.columns.str.strip()
 
 # column selection 
-df1 = df1[["image_id", "laterality", "view_position", "height", "width", "split"]]
+df1 = df1[["image_id", "laterality", "view_position", "height", "width", "split", "breast_density"]]
 df2 = df2[["SOP Instance UID", "Manufacturer's Model Name"]] 
 df3 = df3[["image_id", "finding_categories", "xmin", "ymin", "xmax", "ymax", "finding_idx"]] 
 
