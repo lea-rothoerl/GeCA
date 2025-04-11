@@ -71,36 +71,18 @@ KID values are expressed as 1e-3. Models are trained and evaluated with classifi
 
 2. **Model Training**:
     ```sh
-    CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/images/findings/features/ --global-batch-size 32 --epochs 2500 --fold 5 --num-classes 8 --validate_every 50 --image-root /home/lea_urv/images/findings/png/ --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv --feature-path /home/lea_urv/images/findings/features --results-dir /home/lea_urv/images/findings/weights --image-size 128 --num-workers 2
+    CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/images/findings/features/ --global-batch-size 32 --epochs 2500 --fold 5 --num-classes 8 --validate_every 50 --image-root /home/lea_urv/images/findings/png/ --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv -results-dir /home/lea_urv/images/findings/weights --image-size 128 --num-workers 2
     ```
 
 ## Evaluating GeCA
-1. Generate synthetic images from the best checkpoint:
-    ```sh
-    CUDA_VISIBLE_DEVICES=0 torchrun --master-port 29506 --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --data-path oct_multilabel/ --fold 0 --num-sampling-steps 250 --ckpt ./results_oct_GeCA/001-GeCA-S/checkpoints/best_ckpt.pt --sample-dir ./synthetic_oct/
-    ```
-    **Lea's Command (Findings)**
+1. **Sampling**:
     ```sh
     CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/findings/png/ --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/findings/weights/004-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/findings/synthetic --num-classes 8
-
-    # OLD
-    CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --data-path /home/lea_urv/lesions_png/ --fold 0 --num-sampling-steps 250 --ckpt ../results_lesions_GeCA/000-GeCA-S-0/checkpoints/best_ckpt.pt --sample-dir ../synthetic_lesions/
-    ```
-    **Lea's Command (Full Field)**
-    ```sh
-    CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --data-path /home/lea_urv/fullfield_png_split/Mammomat\ Inspiration/L_CC/ --fold 0 --num-sampling-steps 250 --ckpt ../results_fullfield_GeCA/Mammomat/L_CC/000-GeCA-S-0/checkpoints/best_ckpt.pt --sample-dir ../synthetic_fullfield/
     ```
 
-2. Evaluate generated images:
-    ```sh
-    python evaluate.py --fold 0 --image-size 128 --device_list cuda:1 --real ./oct_multilabel/ --gen ./synthetic_oct/GeCA-S-GS-fold-0-nstep-250-best_ckpt-size-256-vae-ema-cfg-1.5-seed-0/
-    ```
-    **Lea's Command**
+2. **Evaluation**:
     ```sh
     python evaluate.py --fold 5 --image-size 128 --device_list cuda:1 --image-root /home/lea_urv/images/findings/png/ --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv --gen /home/lea_urv/images/findings/synthetic/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-256-vae-ema-cfg-1.5-seed-0/
-    
-    # OLD
-    python evaluate.py --fold 0 --image-size 128 --device_list cuda:0 --real /home/lea_urv/lesions_png/ --gen ../synthetic_lesions/GeCA-S-GS-fold-0-nstep-250-best_ckpt-size-256-vae-ema-cfg-1.5-seed-0/
     ```
 
 
