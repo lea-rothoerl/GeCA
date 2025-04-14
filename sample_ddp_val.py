@@ -127,13 +127,7 @@ def main(args):
     # Figure out how many samples we need to generate on each GPU and how many iterations we need to run:
     n = args.per_proc_batch_size
     global_batch_size = n * dist.get_world_size()
-    # To make things evenly-divisible, we'll sample a bit more than we need and then discard the extra samples:
-    # total_samples = int(math.ceil(args.num_fid_samples / global_batch_size) * global_batch_size)
 
-    # Setup data:
-    #dataset = MammoDataset(root=args.image_root, 
-    #                       annotation_path=args.annotation_path, 
-    #                       mode='test')
     temp_dataset = MammoDataset(root=args.image_root, 
                                 annotation_path=args.annotation_path, 
                                 mode='training', 
@@ -142,6 +136,9 @@ def main(args):
 
     full_labels = temp_dataset.all_labels
     full_label_to_index = temp_dataset.label_to_index
+
+    # DEBUG
+    print(full_label_to_index)
 
     sampling_dataset = MammoDataset(
         root=args.image_root,
@@ -183,7 +180,7 @@ def main(args):
     for _ in range(args.expand_ratio):
         for _, labl in loader:
             labl = labl.to(device).float()
-            labl = labl.squeeze(dim=1)  # B X 4 (or whatever the shape is)
+            labl = labl.squeeze(dim=1)  
 
             z = torch.randn(labl.size(0), model.in_channels, latent_size, latent_size, device=device)
 
@@ -224,7 +221,7 @@ def main(args):
                 index = i * dist.get_world_size() + rank + total
                 dict_client_img['client_id'] = 'syn_' + str(index)
                 dict_client_img['filename'] = os.path.join('gen_samples_val', f"{index:06d}.png")
-                dict_client_img = update_label(dict_client_img, label[i])  # Use the labels from your data
+                dict_client_img = update_label(dict_client_img, label[i])  
                 dict_client_img['patient_name'] = index
                 dict_pd.append(dict_client_img)
 
