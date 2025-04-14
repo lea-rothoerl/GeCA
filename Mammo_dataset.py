@@ -48,21 +48,25 @@ class MammoDataset(Dataset):
         label_dict = {}
         for _, row in self.annotations.iterrows():
             image_id = row["image_id"]
-            #labels = eval(row["finding_categories"]) if isinstance(row["finding_categories"], str) else []
-            #label_dict[image_id] = labels
-            raw_label = row.get(self.label_column)
 
-            if isinstance(raw_label, str):
-                try:
-                    labels = eval(raw_label) if raw_label.startswith("[") else [raw_label]
-                except:
-                    labels = [raw_label]
-            elif pd.isna(raw_label):
-                labels = []
-            else:
-                labels = [str(raw_label)]
-
+            labels = eval(row["finding_categories"])# if isinstance(row["finding_categories"], str) else []
             label_dict[image_id] = labels
+
+            #raw_label = row.get(self.label_column)
+
+            #if isinstance(raw_label, str):
+            #    try:
+            #        labels = eval(raw_label) if raw_label.startswith("[") else [raw_label]
+            #    except:
+            #        labels = [raw_label]
+            #elif pd.isna(raw_label):
+            #    labels = []
+            #else:
+            #    labels = [str(raw_label)]
+
+            #label_dict[image_id] = labels
+            #print(label_dict[image_id])
+            
         return label_dict
 
     def __getitem__(self, idx):
