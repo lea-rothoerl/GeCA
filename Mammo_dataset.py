@@ -77,26 +77,20 @@ class MammoDataset(Dataset):
             
         return label_dict
     
-    
+    def get_one_hot_label(self, img_path):
+        img_id = Path(img_path).name
+        label_strings = self.label_dict.get(img_id, [])
+
+        one_hot_label = [0] * len(self.all_labels)
+        for label in label_strings:
+            if label in self.label_to_index:
+                one_hot_label[self.label_to_index[label]] = 1
+
+        return one_hot_label
+
     def get_mapped_labels(self):
-        """
-        Returns a list of labels corresponding to the images in the dataset.
-        """
-        labels = []
-        for img_path in self.image_paths:
+        return [self.get_one_hot_label(img_path) for img_path in self.image_paths]
 
-            img_id = Path(img_path).name  
-
-            label_strings = self.label_dict.get(img_id, [])
-
-            one_hot_label = [0] * len(self.all_labels) 
-            for label in label_strings:
-                if label in self.label_to_index: 
-                    one_hot_label[self.label_to_index[label]] = 1  
-
-            labels.append(one_hot_label)
-
-        return labels
 
     def __getitem__(self, idx):
         img_path = self.image_paths[idx]
@@ -106,15 +100,7 @@ class MammoDataset(Dataset):
         if self.transform:
             img = self.transform(img)
 
-        # get image ID
-        img_id = Path(img_path).stem
-
-        # get one-hot encoded labels
-        print(label_strings)
-        one_hot_label = [0] * len(self.all_labels)
-        for label in label_strings:
-            if label in self.label_to_index:
-                one_hot_label[self.label_to_index[label]] = 1  
+        one_hot_label = self.get_one_hot_label(img_path) 
 
         return img, torch.tensor(one_hot_label, dtype=torch.float32)
 
