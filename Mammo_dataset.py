@@ -6,7 +6,12 @@ from torch.utils.data import Dataset
 import pandas as pd
 
 class MammoDataset(Dataset):
-    def __init__(self, root: str, annotation_path: str, transform=None, mode='training', label_column='finding_categories'):
+    def __init__(self, 
+                 root: str, 
+                 annotation_path: str, 
+                 transform=None, 
+                 mode='training', 
+                 label_column='finding_categories'):
         """
         Args:
             root (str): Path to the folder containing images.
@@ -19,6 +24,7 @@ class MammoDataset(Dataset):
         self.root = root
         self.transform = transform
         self.label_column = label_column
+        self.mode = mode
 
         # get annotation csv
         self.annotations = pd.read_csv(annotation_path)
@@ -36,7 +42,7 @@ class MammoDataset(Dataset):
         
         # mapping labels
         self.label_dict = self._create_label_mapping()
-        self.all_labels = sorted(set(label for sublist in self.label_dict.values() for label in sublist))
+        self.all_labels = sorted(list(set([label for sublist in self.label_dict.values() for label in sublist])))
         self.label_to_index = {label: idx for idx, label in enumerate(self.all_labels)}
 
         print(f"Total images: {len(self.image_paths)}")
@@ -49,8 +55,10 @@ class MammoDataset(Dataset):
         for _, row in self.annotations.iterrows():
             image_id = row["image_id"]
 
-            labels = eval(row["finding_categories"])# if isinstance(row["finding_categories"], str) else []
-            label_dict[image_id] = labels
+            labels = eval(row["finding_categories"]) 
+            
+            if isinstance(labels, list) and len(labels) > 0:
+                label_dict[image_id] = labels
 
             #raw_label = row.get(self.label_column)
 
@@ -68,6 +76,27 @@ class MammoDataset(Dataset):
             #print(label_dict[image_id])
             
         return label_dict
+    
+    
+    def get_mapped_labels(self):
+        """
+        Returns a list of labels corresponding to the images in the dataset.
+        """
+        labels = []
+        for img_path in self.image_paths:
+
+            img_id = Path(img_path).name  
+
+            label_strings = self.label_dict.get(img_id, [])
+
+            one_hot_label = [0] * len(self.all_labels) 
+            for label in label_strings:
+                if label in self.label_to_index: 
+                    one_hot_label[self.label_to_index[label]] = 1  
+
+            labels.append(one_hot_label)
+
+        return labels
 
     def __getitem__(self, idx):
         img_path = self.image_paths[idx]
@@ -81,7 +110,7 @@ class MammoDataset(Dataset):
         img_id = Path(img_path).stem
 
         # get one-hot encoded labels
-        label_strings = self.label_dict.get(img_id, [])
+        print(label_strings)
         one_hot_label = [0] * len(self.all_labels)
         for label in label_strings:
             if label in self.label_to_index:

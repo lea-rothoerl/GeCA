@@ -55,7 +55,40 @@ def create_npz_from_sample_folder(sample_dir, num=50_000):
     npz_path = f"{sample_dir}.npz"
     np.savez(npz_path, arr_0=samples)
     print(f"Saved .npz file to {npz_path} [shape={samples.shape}].")
+
     return npz_path
+
+class CustomDataset(Dataset):
+    def __init__(self, labels_dir, annot, label_column, mode='train', fold=0, multi_class=False):
+
+        self.datapath = Path(labels_dir)
+
+        self.mammo_dataset = MammoDataset(root=labels_dir, 
+                                          annotation_path=annot, 
+                                          mode=mode, 
+                                          transform=None,
+                                          label_column=label_column)
+        
+        self.label = self.get_mapped_labels()
+        self.all_labels = self.mammo_dataset.all_labels
+
+    def get_mapped_labels(self, df=None, dataset_path=None):
+        if hasattr(self, "mammo_dataset"):  
+            return self.mammo_dataset.get_mapped_labels()
+
+        if self.multi_class:
+            return list(df[self.bin_column].values)
+        else:
+            raise Exception("Dataset label mapping not defined for this case.")
+
+    def __len__(self):
+        return len(self.label)
+
+    def __getitem__(self, idx):
+        label_file = self.label[idx] 
+        label_array = np.array(label_file, dtype=np.float32)
+
+        return 0, torch.from_numpy(label_array)
 
 def main(args):
     """
@@ -133,26 +166,21 @@ def main(args):
                                 mode='training', 
                                 transform=None,
                                 label_column='finding_categories')
-
+    
+    dataset = CustomDataset(args.image_root, 
+                            args.annotation_path, 
+                            mode='test', 
+                            fold=args.fold,
+                            label_column='finding_categories')
+    
     full_labels = temp_dataset.all_labels
-    full_label_to_index = temp_dataset.label_to_index
-
-    # DEBUG
-    print(full_label_to_index)
-
-    sampling_dataset = MammoDataset(
-        root=args.image_root,
-        annotation_path=args.annotation_path,
-        mode='test',
-        label_column='finding_categories'
-    )
-
-    # DEBUG
-    sampling_dataset.all_labels = full_labels
-    sampling_dataset.label_to_index = full_label_to_index
+    dataset.all_labels = temp_dataset.all_labels
+    dataset.mammo_dataset.all_labels = temp_dataset.all_labels
+    dataset.mammo_dataset.label_to_index = {label: idx for idx, label in enumerate(dataset.all_labels)}
+    dataset.label = dataset.mammo_dataset.get_mapped_labels()
 
     loader = DataLoader(
-        sampling_dataset,
+        dataset,
         batch_size=int(args.per_proc_batch_size),
         shuffle=False,
         num_workers=4,
