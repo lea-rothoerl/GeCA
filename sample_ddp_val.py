@@ -69,20 +69,8 @@ class CustomDataset(Dataset):
                                           transform=None,
                                           label_column=label_column)
         
-        self.label = self.get_mapped_labels()
+        self.label = self.mammo_dataset.get_mapped_labels()
         self.all_labels = self.mammo_dataset.all_labels
-
-    def get_mapped_labels(self, df=None, dataset_path=None):
-        if hasattr(self, "mammo_dataset"):  
-            return self.mammo_dataset.get_mapped_labels()
-
-        if self.multi_class:
-            return list(df[self.bin_column].values)
-        else:
-            raise Exception("Dataset label mapping not defined for this case.")
-
-    def __len__(self):
-        return len(self.label)
 
     def __getitem__(self, idx):
         label_file = self.label[idx] 

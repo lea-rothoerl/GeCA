@@ -49,34 +49,36 @@ class MammoDataset(Dataset):
         print(f"Using label column: {self.label_column}")
         print(f"All unique labels: {self.all_labels}")
 
+
     def _create_label_mapping(self):
         """Maps image IDs to their corresponding labels."""
         label_dict = {}
         for _, row in self.annotations.iterrows():
             image_id = row["image_id"]
 
-            labels = eval(row["finding_categories"]) 
+            #labels = eval(row["finding_categories"]) 
             
-            if isinstance(labels, list) and len(labels) > 0:
-                label_dict[image_id] = labels
+            #if isinstance(labels, list) and len(labels) > 0:
+            #    label_dict[image_id] = labels
 
-            #raw_label = row.get(self.label_column)
+            raw_label = row.get(self.label_column)
 
-            #if isinstance(raw_label, str):
-            #    try:
-            #        labels = eval(raw_label) if raw_label.startswith("[") else [raw_label]
-            #    except:
-            #        labels = [raw_label]
-            #elif pd.isna(raw_label):
-            #    labels = []
-            #else:
-            #    labels = [str(raw_label)]
+            if isinstance(raw_label, str):
+                try:
+                    labels = eval(raw_label) if raw_label.startswith("[") else [raw_label]
+                except:
+                    labels = [raw_label]
+            elif pd.isna(raw_label):
+                labels = []
+            else:
+                labels = [str(raw_label)]
 
-            #label_dict[image_id] = labels
+            label_dict[image_id] = labels
             #print(label_dict[image_id])
             
         return label_dict
     
+
     def get_one_hot_label(self, img_path):
         img_id = Path(img_path).name
         label_strings = self.label_dict.get(img_id, [])
@@ -87,6 +89,7 @@ class MammoDataset(Dataset):
                 one_hot_label[self.label_to_index[label]] = 1
 
         return one_hot_label
+
 
     def get_mapped_labels(self):
         return [self.get_one_hot_label(img_path) for img_path in self.image_paths]
@@ -103,6 +106,7 @@ class MammoDataset(Dataset):
         one_hot_label = self.get_one_hot_label(img_path) 
 
         return img, torch.tensor(one_hot_label, dtype=torch.float32)
+
 
     def __len__(self):
         return len(self.image_paths)
