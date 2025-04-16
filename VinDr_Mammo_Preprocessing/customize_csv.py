@@ -49,7 +49,7 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag):
     # stratified 5-Fold split to maintain class distribution
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     
-    for fold_idx, (_, val_idx) in enumerate(skf.split(train_df, train_df["finding_categories"])):
+    for fold_idx, (_, val_idx) in enumerate(skf.split(train_df, train_df[args.label_column])):
         train_df.iloc[val_idx, train_df.columns.get_loc("fold")] = fold_idx  
 
     # split 5% validation off of training set
@@ -88,6 +88,7 @@ if __name__ == "__main__":
     parser.add_argument("--columns", nargs="+", help="List of columns to include.")
     parser.add_argument("--conditions", nargs="+", default=[], help="Filtering conditions (e.g., laterality=R view_position=CC).")
     parser.add_argument("--findings", action="store_true", help="Generate filenames for findings.")
+    parser.add_argument("--label-column", default="finding_categories", help="Column name for labels.")
 
     args = parser.parse_args()
 
