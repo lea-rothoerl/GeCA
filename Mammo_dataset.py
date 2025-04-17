@@ -74,6 +74,8 @@ class MammoDataset(Dataset):
                 labels = [str(raw_label)]
 
             label_dict[image_id] = labels
+            
+            # DEBUG
             #print(label_dict[image_id])
             
         return label_dict

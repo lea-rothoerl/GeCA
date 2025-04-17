@@ -78,6 +78,9 @@ class CustomDataset(Dataset):
 
         return 0, torch.from_numpy(label_array)
 
+    def __len__(self):
+        return len(self.label)
+
 def main(args):
     """
     Run sampling.
@@ -153,13 +156,15 @@ def main(args):
                                 annotation_path=args.annotation_path, 
                                 mode='training', 
                                 transform=None,
-                                label_column='finding_categories')
+                                label_column=args.label_column#'finding_categories'
+                                )
     
     dataset = CustomDataset(args.image_root, 
                             args.annotation_path, 
                             mode='test', 
                             fold=args.fold,
-                            label_column='finding_categories')
+                            label_column=args.label_column#'finding_categories'
+                            )
     
     full_labels = temp_dataset.all_labels
     dataset.all_labels = temp_dataset.all_labels
@@ -281,7 +286,7 @@ if __name__ == "__main__":
     parser.add_argument("--image-root", type=str, required=True)
     parser.add_argument("--annotation-path", type=str, required=True)
     parser.add_argument("--fold", type=int, default=0)
-    parser.add_argument("--label_column", type=str, default="finding_categories")
+    parser.add_argument("--label-column", type=str, default="finding_categories")
     parser.add_argument("--expand_ratio", type=int, default=1)
     parser.add_argument("--image_space", action='store_true', default=False)
 

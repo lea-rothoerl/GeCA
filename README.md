@@ -75,6 +75,7 @@ KID values are expressed as 1e-3. Models are trained and evaluated with classifi
     ```
 
 ## Evaluating GeCA
+
 1. **Sampling**:
     ```sh
     CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/findings/png/ --annotation-path /home/lea_urv/images/findings/Mammomat_Mass.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/findings/weights/004-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/findings/synthetic --num-classes 8
