@@ -59,7 +59,7 @@ def create_npz_from_sample_folder(sample_dir, num=50_000):
     return npz_path
 
 class CustomDataset(Dataset):
-    def __init__(self, labels_dir, annot, label_column, mode='train', fold=0, multi_class=False):
+    def __init__(self, labels_dir, annot, label_column, mode, fold=0, multi_class=False):
 
         self.datapath = Path(labels_dir)
 
@@ -161,7 +161,7 @@ def main(args):
     
     dataset = CustomDataset(args.image_root, 
                             args.annotation_path, 
-                            mode='test', 
+                            mode='val', 
                             fold=args.fold,
                             label_column=args.label_column#'finding_categories'
                             )
