@@ -88,6 +88,20 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag):
     for split, count in split_counts.items():
         print(f"  {split.capitalize()}: {count} images")
 
+    # print number of unique labels
+    if args.label_column in df.columns:
+        labels_series = df[args.label_column].dropna().astype(str)
+
+        # comma-separated multi-label entries
+        split_labels = labels_series.str.split(",")
+        flat_labels = [label.strip() for sublist in split_labels for label in sublist]
+        unique_labels = set(flat_labels)
+
+        print(f"\nNumber of unique labels in '{args.label_column}': {len(unique_labels)}")
+        print(f"Unique labels: {sorted(unique_labels)}")
+
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate custom CSV from annotations.")
     parser.add_argument("input_csv", help="Path to the input CSV file (annotations.csv).")
