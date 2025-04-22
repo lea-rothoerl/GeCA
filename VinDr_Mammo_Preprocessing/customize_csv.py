@@ -2,6 +2,7 @@ import pandas as pd
 import argparse
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from collections import Counter
+import ast
 
 def filter_csv(input_csv, output_csv, columns, conditions, findings_flag, label_column, keep_split):
     """
@@ -153,13 +154,25 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag, label_
     if label_column in df.columns:
         labels_series = df[label_column].dropna().astype(str)
 
-        # comma-separated multi-label entries
-        split_labels = labels_series.str.split(",")
-        flat_labels = [label.strip() for sublist in split_labels for label in sublist]
-        unique_labels = set(flat_labels)
+        all_labels = set()
 
-        print(f"\nNumber of unique labels in '{label_column}': {len(unique_labels)}")
-        print(f"Unique labels: {sorted(unique_labels)}")
+        for entry in labels_series:
+            try:
+                parsed = ast.literal_eval(entry)
+                if isinstance(parsed, list):
+                    cleaned_labels = [label.strip().strip("'\"") for label in parsed]
+                    all_labels.update(cleaned_labels)
+                else:
+                    # if not a list, add the entry as is
+                    all_labels.add(str(parsed).strip().strip("'\""))
+            except (ValueError, SyntaxError):
+                split_labels = [label.strip().strip("'\"[]") for label in entry.split(",")]
+                all_labels.update(split_labels)
+
+        print(f"\nNumber of unique labels in '{label_column}': {len(all_labels)}")
+        print("Unique labels:")
+        for label in sorted(all_labels):
+            print(f"  - {label}")
 
 
 
