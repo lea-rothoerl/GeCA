@@ -1,17 +1,20 @@
 import pandas as pd
 import argparse
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import train_test_split, StratifiedKFold
+from collections import Counter
 
-def filter_csv(input_csv, output_csv, columns, conditions, findings_flag):
+def filter_csv(input_csv, output_csv, columns, conditions, findings_flag, label_column, keep_split):
     """
     Filters a CSV file based on user-specified columns and conditions.
     
     Args:
         input_csv (str): Path to the input CSV file.
         output_csv (str): Path to save the filtered CSV file.
-        columns (list): List of column names to include in the output. All if not specified.
-        conditions (list): List of conditions to filter rows (e.g., "laterality=R").
-        findings (bool): Whether to generate finding-based filenames.
+        --columns (list): List of column names to include in the output. All if not specified.
+        --conditions (list): List of conditions to filter rows (e.g., "laterality=R").
+        --findings (bool): Whether to generate finding-based filenames.
+        --label-column (str): Column name for labels.
+        --keep-split (bool): Whether to keep the original split in the CSV.
     """
         
     df = pd.read_csv(input_csv)
@@ -54,11 +57,70 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag):
     # add fold column
     df["fold"] = float("nan")
 
-    # stratified 5-fold split
+    # take care of rare labels
+    label_series = df[label_column].dropna().astype(str)
+    is_multilabel = label_series.str.contains(",").any()
+
+    if is_multilabel:
+        split_labels = label_series.str.split(",")
+        flat_labels = [label.strip() for sublist in split_labels for label in sublist]
+        label_counts = Counter(flat_labels)
+
+        valid_labels = {label for label, count in label_counts.items() if count > 1}
+
+        def row_has_only_valid_labels(row):
+            labels = {label.strip() for label in str(row).split(",")}
+            return all(label in valid_labels for label in labels)
+
+        original_len = len(df)
+        df = df[df[label_column].apply(row_has_only_valid_labels)]
+        print(f"Removed {original_len - len(df)} rows with rare labels.")
+
+    else:
+        label_counts = label_series.value_counts()
+        valid_labels = label_counts[label_counts > 1].index
+        original_len = len(df)
+        df = df[df[label_column].isin(valid_labels)]
+        print(f"Removed {original_len - len(df)} rows with rare labels.")
+
+    # train/test split if not keeping original split
+    if not keep_split:
+        if is_multilabel:
+            print("Skipping stratified train/test split (multi-label case).")
+            train_df, test_df = train_test_split(df, test_size=0.25, random_state=42)
+        else:
+            train_df, test_df = train_test_split(
+                df,
+                test_size=0.25,
+                stratify=df[label_column],
+                random_state=42
+            )
+
+        train_df["split"] = "training"
+        test_df["split"] = "test"
+        df = pd.concat([train_df, test_df], ignore_index=True)
+
+    # 5-fold cross-validation
     train_df = df[df["split"] == "training"].copy()
-    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    for fold_idx, (_, val_idx) in enumerate(skf.split(train_df, train_df[args.label_column])):
-        train_df.iloc[val_idx, train_df.columns.get_loc("fold")] = fold_idx
+    train_df["fold"] = float("nan")
+
+    if is_multilabel:
+        print("Skipping stratified KFold (multi-label case), using random folds instead.")
+        shuffled_idx = train_df.sample(frac=1, random_state=42).index
+        fold_sizes = len(shuffled_idx) // 5
+        for i in range(5):
+            fold_idx = shuffled_idx[i * fold_sizes:] if i == 4 else shuffled_idx[i * fold_sizes:(i + 1) * fold_sizes]
+            train_df.loc[fold_idx, "fold"] = i
+    else:
+        skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+        for fold_idx, (_, val_idx) in enumerate(skf.split(train_df, train_df[label_column])):
+            train_df.iloc[val_idx, train_df.columns.get_loc("fold")] = fold_idx
+
+    # merge everything back
+    df = df.merge(train_df[["image_id", "split", "fold"]], on="image_id", how="left", suffixes=("", "_new"))
+    df["split"] = df["split_new"].combine_first(df["split"])
+    df["fold"] = df["fold_new"].combine_first(df["fold"])
+    df.drop(columns=["split_new", "fold_new"], inplace=True)
 
     # hold out 5% as validation set
     val_subset = train_df.sample(frac=0.05, random_state=42)
@@ -88,15 +150,15 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag):
         print(f"  {split.capitalize()}: {count} images")
 
     # print number of unique labels
-    if args.label_column in df.columns:
-        labels_series = df[args.label_column].dropna().astype(str)
+    if label_column in df.columns:
+        labels_series = df[label_column].dropna().astype(str)
 
         # comma-separated multi-label entries
         split_labels = labels_series.str.split(",")
         flat_labels = [label.strip() for sublist in split_labels for label in sublist]
         unique_labels = set(flat_labels)
 
-        print(f"\nNumber of unique labels in '{args.label_column}': {len(unique_labels)}")
+        print(f"\nNumber of unique labels in '{label_column}': {len(unique_labels)}")
         print(f"Unique labels: {sorted(unique_labels)}")
 
 
@@ -109,9 +171,8 @@ if __name__ == "__main__":
     parser.add_argument("--conditions", nargs="+", default=[], help="Filtering conditions (e.g., laterality=R view_position=CC).")
     parser.add_argument("--findings", action="store_true", help="Generate filenames for findings.")
     parser.add_argument("--label-column", default="finding_categories", help="Column name for labels.")
+    parser.add_argument("--keep-split", action="store_true", help="Keep the original split in the CSV.")
 
     args = parser.parse_args()
 
-    filter_csv(args.input_csv, args.output_csv, args.columns, args.conditions, args.findings)
-
-#python3 ../../GeCA/VinDr_Mammo_Preprocessing/customize_csv.py annotations.csv ../findings/Mammomat_Mass.csv --columns image_id finding_categories xmin ymin xmax ymax finding_idx model split --conditions model=Mammomat\ Inspiration finding_categories=Mass --findings
+    filter_csv(args.input_csv, args.output_csv, args.columns, args.conditions, args.findings, args.label_column, args.keep_split)
