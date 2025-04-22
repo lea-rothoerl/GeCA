@@ -2,7 +2,6 @@ import pydicom
 import numpy as np
 from PIL import Image
 import os
-import shutil
 import argparse
 import pandas as pd
 

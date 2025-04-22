@@ -1,6 +1,5 @@
 import pandas as pd
 import argparse
-import os
 from sklearn.model_selection import StratifiedKFold
 
 def filter_csv(input_csv, output_csv, columns, conditions, findings_flag):
