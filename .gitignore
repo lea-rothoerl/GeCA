@@ -1,4 +1,3 @@
 *.pyc
 wandb/*
 home/lea_urv/images/findings/weights/*
-Evaluation_Classifier/test_*

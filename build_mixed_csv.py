@@ -19,8 +19,14 @@ def build_mixed_csv(reference_csv,
 
     # load synthetic annotations
     synth_df = pd.read_csv(synth_annotation_csv)
+    synth_df = synth_df.loc[:, ~synth_df.columns.str.contains('^Unnamed')]
+
     # DEBUG
     print(f"Loaded synthetic annotation CSV with {len(synth_df)} entries.")
+
+    synth_base_path = os.path.dirname(os.path.abspath(synth_annotation_csv))
+    # DEBUG
+    print(f"Synth base path: {synth_base_path}")
 
     # identify label columns
     known_cols = {"client_id", "filename", "patient_name", "multi_class_label"}
@@ -31,18 +37,26 @@ def build_mixed_csv(reference_csv,
     # convert one-hot encoded labels to label name
     def get_label(row):
         active_labels = [label for label in label_cols if row[label] == 1]
-        if len(active_labels) == 0:
-            return "No_Label"
-        elif len(active_labels) == 1:
-            return active_labels[0]
+        if label_column == "finding_categories":
+            # For finding_categories: make it a stringified list like ['Mass']
+            if len(active_labels) == 0:
+                return "['No Finding']"
+            else:
+                return str(active_labels)
         else:
-            return ",".join(active_labels)  
+            # For other label columns: return single label or comma-separated string
+            if len(active_labels) == 0:
+                return "No Finding"
+            elif len(active_labels) == 1:
+                return active_labels[0]
+            else:
+                return ",".join(active_labels) 
         
     synth_df[label_column] = synth_df.apply(get_label, axis=1)
 
     # prepare synthetic samples DataFrame
     synth_samples = pd.DataFrame({
-        "image_id": synth_df["filename"].apply(lambda x: os.path.basename(x)),
+        "image_id": synth_df["filename"].apply(lambda x: os.path.join(synth_base_path, x)),
         "model": "Synthetic",
         label_column: synth_df[label_column],
         "split": "training",

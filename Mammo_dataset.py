@@ -26,8 +26,17 @@ class MammoDataset(Dataset):
         self.label_column = label_column
         self.mode = mode
 
-        # get annotation csv
+        # get annotation csv while checking if images are synthetic (path as ID)
+        def resolve_path(image_id):
+            if os.path.isabs(image_id):
+                return image_id
+            else:
+                return os.path.join(root, image_id)
+
         self.annotations = pd.read_csv(annotation_path)
+        self.annotations["resolved_path"] = self.annotations["image_id"].apply(resolve_path)
+        self.annotations = self.annotations[self.annotations["resolved_path"].apply(os.path.exists)]
+        self.image_paths = self.annotations["resolved_path"].tolist()
 
         # filter dataset by mode (split)
         if mode not in ["training", "test", "val"]:
@@ -44,6 +53,11 @@ class MammoDataset(Dataset):
         self.label_dict = self._create_label_mapping()
         self.all_labels = sorted(list(set([label for sublist in self.label_dict.values() for label in sublist])))
         self.label_to_index = {label: idx for idx, label in enumerate(self.all_labels)}
+
+        # DEBUG 
+        missing_files = self.annotations[self.annotations["resolved_path"].apply(lambda p: not os.path.exists(p))]
+        if not missing_files.empty:
+            print(f"Warning: {len(missing_files)} files listed in CSV not found on disk.")
 
         print(f"Total images: {len(self.image_paths)}")
         print(f"Using label column: {self.label_column}")

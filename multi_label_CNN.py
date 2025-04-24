@@ -9,6 +9,7 @@ import numpy as np
 from Mammo_dataset import MammoDataset
 import argparse
 import torchvision.transforms as tf
+import wandb
 
 class MultiLabelCNN(nn.Module):
     def __init__(self, num_classes):
@@ -36,6 +37,15 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    wandb.init(
+        project="mammo-multilabel-cnn",
+        config={
+            "epochs": 5,
+            "batch_size": 16,
+            "label_column": args.label_column
+        }
+    )
+
     transform = tf.Compose([
         tf.ToPILImage(),
         tf.Grayscale(num_output_channels=1),
@@ -58,6 +68,8 @@ if __name__ == "__main__":
         mode="val", 
         label_column=args.label_column,
     )
+
+    dataset_test.all_labels = dataset_train.all_labels
 
     train_loader = DataLoader(dataset_train, batch_size=16, shuffle=True)
     val_loader = DataLoader(dataset_test, batch_size=16)
@@ -85,6 +97,7 @@ if __name__ == "__main__":
             running_loss += loss.item()
 
         print(f"Epoch {epoch+1}, Loss: {running_loss / len(train_loader):.4f}")
+        wandb.log({"train_loss": running_loss / len(train_loader), "epoch": epoch+1})
 
     model.eval()
     all_preds, all_targets = [], []
@@ -109,4 +122,6 @@ if __name__ == "__main__":
     # F1 score (macro average)
     f1 = f1_score(all_targets, all_preds, average="macro")
     print(f"Macro F1 Score: {f1:.4f}")
+    wandb.log({"macro_f1": f1})
+
 
