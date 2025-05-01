@@ -9,8 +9,8 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag, label_
     Filters a CSV file based on user-specified columns and conditions.
     
     Args:
-        input_csv (str): Path to the input CSV file.
-        output_csv (str): Path to save the filtered CSV file.
+        input-csv (str): Path to the input CSV file.
+        output-csv (str): Path to save the filtered CSV file.
         --columns (list): List of column names to include in the output. All if not specified.
         --conditions (list): List of conditions to filter rows (e.g., "laterality=R").
         --findings (bool): Whether to generate finding-based filenames.

@@ -11,7 +11,8 @@ class MammoDataset(Dataset):
                  annotation_path: str, 
                  transform=None, 
                  mode='training', 
-                 label_column='finding_categories'):
+                 label_column='finding_categories',
+                 single_label=False):
         """
         Args:
             root (str): Path to the folder containing images.
@@ -19,12 +20,14 @@ class MammoDataset(Dataset):
             transform: Optional image transformations.
             mode (str): The dataset mode ('training', 'test', or 'val'). Filters data accordingly.
             label_column (str): Name of the column to be used for labels (default: 'finding_categories').
+            single_label (bool): If True, assumes each image has a single label. If False, assumes multiple labels.
         """
         super(MammoDataset, self).__init__()
         self.root = root
         self.transform = transform
         self.label_column = label_column
         self.mode = mode
+        self.single_label = single_label
 
         # get annotation csv while checking if images are synthetic (path as ID)
         def resolve_path(image_id):
@@ -63,7 +66,6 @@ class MammoDataset(Dataset):
         print(f"Using label column: {self.label_column}")
         print(f"All unique labels: {self.all_labels}")
 
-
     def _create_label_mapping(self):
         """Maps image IDs to their corresponding labels."""
         label_dict = {}
@@ -94,7 +96,6 @@ class MammoDataset(Dataset):
             
         return label_dict
     
-
     def get_one_hot_label(self, img_path):
         img_id = Path(img_path).name
         label_strings = self.label_dict.get(img_id, [])
@@ -105,6 +106,19 @@ class MammoDataset(Dataset):
                 one_hot_label[self.label_to_index[label]] = 1
 
         return one_hot_label
+
+    def get_class_index_label(self, img_path):
+        img_id = Path(img_path).name
+        label_strings = self.label_dict.get(img_id, [])
+
+        if len(label_strings) == 0:
+            raise ValueError(f"No label found for image {img_id}")
+
+        label = label_strings[0]
+        if label not in self.label_to_index:
+            raise ValueError(f"Label '{label}' not found in label_to_index mapping.")
+
+        return self.label_to_index[label]
 
 
     def get_mapped_labels(self):
@@ -119,9 +133,12 @@ class MammoDataset(Dataset):
         if self.transform:
             img = self.transform(img)
 
-        one_hot_label = self.get_one_hot_label(img_path) 
-
-        return img, torch.tensor(one_hot_label, dtype=torch.float32)
+        if self.single_label:
+            label = self.get_class_index_label(img_path)
+            return img, torch.tensor(label, dtype=torch.long)
+        else:
+            one_hot_label = self.get_one_hot_label(img_path)
+            return img, torch.tensor(one_hot_label, dtype=torch.float32)
 
 
     def __len__(self):
