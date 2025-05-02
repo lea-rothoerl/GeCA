@@ -36,7 +36,8 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag, label_
         print(f"Error: The following columns do not exist in the CSV: {missing_cols}")
         return
 
-    # apply filtering conditions
+    # build filtering conditions
+    condition_dict = {}
     for condition in conditions:
         column, value = condition.split("=")
         column = column.strip()
@@ -47,10 +48,20 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag, label_
         elif value.replace(".", "", 1).isdigit():
             value = float(value)
 
+        if column not in condition_dict:
+            condition_dict[column] = []
+        condition_dict[column].append(value)
+
+    # apply filtering conditions with OR within columns
+    for column, values in condition_dict.items():
         if column == "finding_categories":
-            df = df[df[column].astype(str).str.contains(value, regex=False, na=False)]
+            # OR logic for string contains on any value
+            mask = df[column].astype(str).apply(
+                lambda x: any(val in x for val in values)
+            )
+            df = df[mask]
         else:
-            df = df[df[column] == value]
+            df = df[df[column].isin(values)]
 
     # only keep requested columns (including forced ones)
     df = df[columns]

@@ -70,7 +70,10 @@ class MammoDataset(Dataset):
         """Maps image IDs to their corresponding labels."""
         label_dict = {}
         for _, row in self.annotations.iterrows():
-            image_id = row["image_id"]
+            #image_id = row["image_id"]
+            # DEBUG
+            image_id = Path(row["image_id"]).name
+
 
             #labels = eval(row["finding_categories"]) 
             
