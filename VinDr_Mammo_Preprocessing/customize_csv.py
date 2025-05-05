@@ -185,7 +185,54 @@ def filter_csv(input_csv, output_csv, columns, conditions, findings_flag, label_
         for label in sorted(all_labels):
             print(f"  - {label}")
 
+    # print image counts per split per label
+    if label_column in df.columns:
+        print("\nImage counts per split per label:")
 
+        splits = ["training", "test", "val"]
+        labels_series = df[label_column].dropna().astype(str)
+
+        all_labels = set()
+        for entry in labels_series:
+            try:
+                parsed = ast.literal_eval(entry)
+                if isinstance(parsed, list):
+                    cleaned_labels = [label.strip().strip("'\"") for label in parsed]
+                    all_labels.update(cleaned_labels)
+                else:
+                    all_labels.add(str(parsed).strip().strip("'\""))
+            except (ValueError, SyntaxError):
+                split_labels = [label.strip().strip("'\"[]") for label in entry.split(",")]
+                all_labels.update(split_labels)
+
+        for label in sorted(all_labels):
+            counts = {}
+            for split in splits:
+                split_df = df[df["split"] == split]
+
+                if split_df.empty:
+                    counts[split] = 0
+                    continue
+
+                label_count = 0
+                for _, row in split_df.iterrows():
+                    try:
+                        parsed = ast.literal_eval(str(row[label_column]))
+                        if isinstance(parsed, list):
+                            cleaned_labels = [l.strip().strip("'\"") for l in parsed]
+                        else:
+                            cleaned_labels = [str(parsed).strip().strip("'\"")]
+                    except (ValueError, SyntaxError):
+                        cleaned_labels = [l.strip().strip("'\"[]") for l in str(row[label_column]).split(",")]
+
+                    if label in cleaned_labels:
+                        label_count += 1
+
+                counts[split] = label_count
+
+            total = sum(counts.values())
+            print(f"  {label}: Training: {counts.get('training', 0)}, Test: {counts.get('test', 0)}, "
+                f"Val: {counts.get('val', 0)}, Total: {total}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate custom CSV from annotations.")
