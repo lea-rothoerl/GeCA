@@ -8,9 +8,7 @@ python ../../GeCA/VinDr_Mammo_Preprocessing/customize_csv.py annotations.csv MA_
 CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_PL_FI.csv --features-path /home/lea_urv/images/fullfield/features/MA_PL_FI --fold 5 --image-size 128 --label-column finding_categories
 
 ### Model Training
-CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/images/fullfield/features/MA_PL_FI/ --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_PL_FI.csv --label-column finding_categories --results-dir /home/lea_urv/images/fullfield/weights/MA_PL_FI/ --num-classes 11 --epochs 2500 --global-batch-size 32 --fold 5 --validate_every 50 --image-size 128 --num-workers 2
-
-break after 600 epochs -> needs more
+CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/images/fullfield/features/MA_PL_FI/ --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_PL_FI.csv --label-column finding_categories --results-dir /home/lea_urv/images/fullfield/weights/MA_PL_FI/ --num-classes 11 --epochs 1000 --global-batch-size 32 --fold 5 --validate_every 50 --image-size 128 --num-workers 2
 
 ### Sampling
 CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_PL_FI.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/MA_PL_FI/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/MA_PL_FI/ --num-classes 11 --image-size 128 --label-column finding_categories
@@ -51,9 +49,7 @@ python ../../GeCA/VinDr_Mammo_Preprocessing/customize_csv.py annotations.csv MA_
 CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_DE.csv --features-path /home/lea_urv/images/fullfield/features/MA_DE --fold 5 --image-size 128 --label-column breast_density
 
 ### Model Training
-CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/images/fullfield/features/MA_DE/ --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_DE.csv --label-column breast_density --results-dir /home/lea_urv/images/fullfield/weights/MA_DE/ --num-classes 4 --epochs 2500 --global-batch-size 32 --fold 5 --validate_every 50 --image-size 128 --num-workers 2
-
-break after 1000 epochs
+CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/images/fullfield/features/MA_DE/ --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_DE.csv --label-column breast_density --results-dir /home/lea_urv/images/fullfield/weights/MA_DE/ --num-classes 4 --epochs 1000 --global-batch-size 32 --fold 5 --validate_every 50 --image-size 128 --num-workers 2
 
 ### Sampling
 CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_DE.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/MA_DE/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/MA_DE/ --num-classes 4 --label-column breast_density --image-size 128
@@ -74,13 +70,13 @@ CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --nnodes=1 --master-port 29504 --npro
 ### Model Training
 CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/images/fullfield/features/PL_DE/ --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/PL_DE.csv --label-column breast_density --results-dir /home/lea_urv/images/fullfield/weights/PL_DE/ --num-classes 4 --epochs 2500 --global-batch-size 32 --fold 5 --validate_every 50 --image-size 128 --num-workers 2
 
-break after ??? epochs
+ran til the end
 
 ### Sampling
 CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/PL_DE.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/PL_DE/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/PL_DE/ --num-classes 4 --label-column breast_density --image-size 128
 
 ### Evaluation
-
+python evaluate.py --fold 5 --image-size 128 --device_list cuda:0 --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/PL_DE.csv --gen /home/lea_urv/images/fullfield/synthetic/PL_DE/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-128-vae-ema-cfg-1.5-seed-0/ --label-column breast_density
 
 
 --------
@@ -94,9 +90,9 @@ python ../../GeCA/VinDr_Mammo_Preprocessing/customize_csv.py annotations.csv MA_
 CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_PL_DE.csv --features-path /home/lea_urv/images/fullfield/features/MA_PL_DE --fold 5 --image-size 128 --label-column breast_density
 
 ### Model Training
-CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/images/fullfield/features/MA_PL_DE/ --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_PL_DE.csv --label-column breast_density --results-dir /home/lea_urv/images/fullfield/weights/MA_PL_DE/ --num-classes 4 --epochs 2500 --global-batch-size 32 --fold 5 --validate_every 50 --image-size 128 --num-workers 2
+CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/images/fullfield/features/MA_PL_DE/ --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_PL_DE.csv --label-column breast_density --results-dir /home/lea_urv/images/fullfield/weights/MA_PL_DE/ --num-classes 4 --epochs 1000 --global-batch-size 32 --fold 5 --validate_every 50 --image-size 128 --num-workers 2
 
-break after ??? epochs
+break after ??? epochs (MAX 1000)
 
 ### Sampling
 CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_PL_DE.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/MA_PL_DE/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/MA_PL_DE/ --num-classes 4 --label-column breast_density --image-size 128
@@ -116,9 +112,7 @@ python ../../GeCA/VinDr_Mammo_Preprocessing/customize_csv.py annotations.csv MA_
 CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --nnodes=1 --master-port 29504 --nproc_per_node=1 extract_features.py --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_FI.csv --features-path /home/lea_urv/images/fullfield/features/MA_FI --fold 5 --image-size 128 --label-column finding_categories
 
 ### Model Training
-CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/images/fullfield/features/MA_FI/ --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_FI.csv --label-column finding_categories --results-dir /home/lea_urv/images/fullfield/weights/MA_FI/ --num-classes 11 --epochs 2500 --global-batch-size 32 --fold 5 --validate_every 50 --image-size 128 --num-workers 2
-
-break after ??? epochs
+CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/images/fullfield/features/MA_FI/ --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_FI.csv --label-column finding_categories --results-dir /home/lea_urv/images/fullfield/weights/MA_FI/ --num-classes 11 --epochs 1000 --global-batch-size 32 --fold 5 --validate_every 50 --image-size 128 --num-workers 2
 
 ### Sampling
 CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_FI.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/MA_FI/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/MA_FI/ --num-classes 11 --label-column finding_categories --image-size 128
