@@ -50,7 +50,7 @@ class EarlyStopping:
         self.val_score_min = val_score
 
 def main(args):
-    wandb.init(project="mammo-density-classifier", config=vars(args))
+    wandb.init(project="mammo-density-efficientnet", config=vars(args))
     early_stopping = EarlyStopping(path='best_model.pt')
 
     # transforms
