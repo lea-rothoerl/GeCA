@@ -39,6 +39,7 @@ CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -
 python evaluate.py --fold 5 --image-size 128 --device_list cuda:0 --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/PL_FI.csv --gen /home/lea_urv/images/fullfield/synthetic/PL_FI/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-128-vae-ema-cfg-1.5-seed-0/ --label-column finding_categories
 
 --------
+
 ## Mammomat density (MA_DE)
 4 labels
 
@@ -57,7 +58,22 @@ CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -
 ### Evaluation
 python evaluate.py --fold 5 --image-size 128 --device_list cuda:0 --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_DE.csv --gen /home/lea_urv/images/fullfield/synthetic/MA_DE/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-128-vae-ema-cfg-1.5-seed-0/ --label-column breast_density
 
+### Classifier
+#### Big Sampling 
+CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_DE.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/MA_DE/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/MA_DE_Syn/ --num-classes 4 --label-column breast_density --image-size 128 --expand_ratio 13
+
+#### Mixed CSV Creation
+python /home/lea_urv/GeCA/build_mixed_csv.py --reference-csv /home/lea_urv/images/fullfield/MA_DE.csv --synth-annotation-csv /home/lea_urv/images/fullfield/synthetic/MA_DE_Syn/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-128-vae-ema-cfg-1.5-seed-0/val_syn_5.csv --output-csv /home/lea_urv/images/fullfield/MA_DE_Syn.csv 
+
+#### Reference
+python /home/lea_urv/GeCA/classify_cnn.py --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_DE.csv --label-column breast_density --epochs 25
+
+#### Test
+python /home/lea_urv/GeCA/classify_cnn.py --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_DE_Syn.csv --label-column breast_density --epochs 25
+
+
 --------
+
 ## Planmed density (PL_DE)
 4 labels
 
@@ -78,9 +94,22 @@ CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -
 ### Evaluation
 python evaluate.py --fold 5 --image-size 128 --device_list cuda:0 --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/PL_DE.csv --gen /home/lea_urv/images/fullfield/synthetic/PL_DE/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-128-vae-ema-cfg-1.5-seed-0/ --label-column breast_density
 
+### Classifier
+#### Big Sampling 
+CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/PL_DE.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/PL_DE/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/PL_DE_Syn/ --num-classes 4 --label-column breast_density --image-size 128 --expand_ratio 14
+
+#### Mixed CSV Creation
+python /home/lea_urv/GeCA/build_mixed_csv.py --reference-csv /home/lea_urv/images/fullfield/PL_DE.csv --synth-annotation-csv /home/lea_urv/images/fullfield/synthetic/PL_DE_Syn/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-128-vae-ema-cfg-1.5-seed-0/val_syn_5.csv --output-csv /home/lea_urv/images/fullfield/PL_DE_Syn.csv 
+
+#### Reference
+python /home/lea_urv/GeCA/classify_cnn.py --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/PL_DE.csv --label-column breast_density --epochs 25
+
+#### Test
+python /home/lea_urv/GeCA/classify_cnn.py --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/PL_DE_Syn.csv --label-column breast_density --epochs 25
 
 --------
-## Planmed density (MA_PL_DE)
+
+## Mammomat + Planmed density (MA_PL_DE)
 4 labels
 
 ### CSV Customization
@@ -92,17 +121,28 @@ CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --nnodes=1 --master-port 29504 --npro
 ### Model Training
 CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/images/fullfield/features/MA_PL_DE/ --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_PL_DE.csv --label-column breast_density --results-dir /home/lea_urv/images/fullfield/weights/MA_PL_DE/ --num-classes 4 --epochs 1000 --global-batch-size 32 --fold 5 --validate_every 50 --image-size 128 --num-workers 2
 
-break after ??? epochs (MAX 1000)
-
 ### Sampling
 CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_PL_DE.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/MA_PL_DE/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/MA_PL_DE/ --num-classes 4 --label-column breast_density --image-size 128
 
 ### Evaluation
+python evaluate.py --fold 5 --image-size 128 --device_list cuda:0 --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_PL_DE.csv --gen /home/lea_urv/images/fullfield/synthetic/MA_PL_DE/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-128-vae-ema-cfg-1.5-seed-0/ --label-column breast_density
 
+### Classifier
+#### Big Sampling 
+CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_PL_DE.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/MA_PL_DE/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/MA_PL_DE_Syn/ --num-classes 4 --label-column breast_density --image-size 128 --expand_ratio 13
 
+#### Mixed CSV Creation
+python /home/lea_urv/GeCA/build_mixed_csv.py --reference-csv /home/lea_urv/images/fullfield/MA_PL_DE.csv --synth-annotation-csv /home/lea_urv/images/fullfield/synthetic/MA_PL_DE_Syn/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-128-vae-ema-cfg-1.5-seed-0/val_syn_5.csv --output-csv /home/lea_urv/images/fullfield/MA_PL_DE_Syn.csv 
+
+#### Reference
+python /home/lea_urv/GeCA/classify_cnn.py --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_PL_DE.csv --label-column breast_density --epochs 25
+
+#### Test
+python /home/lea_urv/GeCA/classify_cnn.py --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_PL_DE_Syn.csv --label-column breast_density --epochs 25
 
 --------
-## Planmed density (MA_FI)
+
+## Mammomat findings (MA_FI)
 11 labels
 
 ### CSV Customization
@@ -118,11 +158,11 @@ CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf
 CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_FI.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/MA_FI/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/MA_FI/ --num-classes 11 --label-column finding_categories --image-size 128
 
 ### Evaluation
-
-
+python evaluate.py --fold 5 --image-size 128 --device_list cuda:0 --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_FI.csv --gen /home/lea_urv/images/fullfield/synthetic/MA_FI/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-128-vae-ema-cfg-1.5-seed-0/ --label-column finding_categories
 
 --------
-## Planmed density (MAS_MO)
+
+## Masses model (MAS_MO)
 4 labels
 
 ### CSV Customization
@@ -134,9 +174,8 @@ CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --nnodes=1 --master-port 29504 --npro
 ### Model Training
 CUDA_VISIBLE_DEVICES=0,1 nice -n 10 accelerate launch --main_process_port $(shuf -i 30000-35000 -n 1) --multi-gpu --num_processes 2 --mixed_precision fp16 train.py --model GeCA-S --feature-path /home/lea_urv/images/fullfield/features/MAS_MO/ --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MAS_MO.csv --label-column model --results-dir /home/lea_urv/images/fullfield/weights/MAS_MO/ --num-classes 4 --epochs 2500 --global-batch-size 32 --fold 5 --validate_every 50 --image-size 128 --num-workers 2
 
-break after ??? epochs
-
 ### Sampling
 CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MAS_MO.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/MAS_MO/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/MAS_MO/ --num-classes 4 --label-column model --image-size 128
 
 ### Evaluation
+python evaluate.py --fold 5 --image-size 128 --device_list cuda:0 --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MAS_MO.csv --gen /home/lea_urv/images/fullfield/synthetic/MAS_MO/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-128-vae-ema-cfg-1.5-seed-0/ --label-column model
