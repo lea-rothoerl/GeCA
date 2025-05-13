@@ -6,11 +6,8 @@ import random
 def build_mixed_csv(reference_csv, 
                     synth_annotation_csv, 
                     output_csv, 
-                    mode="extend", 
                     label_column="finding_categories"
                     ):
-    
-    assert mode in ["extend", "replace"], "Mode must be 'extend' or 'replace'"
 
     # load reference CSV
     ref_df = pd.read_csv(reference_csv)
@@ -63,20 +60,8 @@ def build_mixed_csv(reference_csv,
         "fold": -1 
     })
 
-    if mode == "extend":
-        mixed_df = pd.concat([ref_df, synth_samples], ignore_index=True)
-        print(f"Extended training set by {len(synth_samples)} synthetic samples.")
-    elif mode == "replace":
-        real_train_idx = ref_df[ref_df["split"] == "training"].index.tolist()
-        n_replace = min(len(real_train_idx), len(synth_samples))
-        replace_idx = random.sample(real_train_idx, n_replace)
-
-        # drop selected real samples
-        ref_df.drop(index=replace_idx, inplace=True)
-        print(f"Replaced {n_replace} real training samples with synthetic ones.")
-
-        # add synthetic samples
-        mixed_df = pd.concat([ref_df, synth_samples.iloc[:n_replace]], ignore_index=True)
+    mixed_df = pd.concat([ref_df, synth_samples], ignore_index=True)
+    print(f"Extended training set by {len(synth_samples)} synthetic samples.")
 
     # save result
     mixed_df.to_csv(output_csv, index=False)
@@ -90,8 +75,7 @@ if __name__ == "__main__":
     parser.add_argument("--reference-csv", required=True, help="Path to the reference CSV file with real images.")
     parser.add_argument("--synth-annotation-csv", required=True, help="Path to synthetic images annotation CSV.")
     parser.add_argument("--output-csv", required=True, help="Path to save the mixed CSV file.")
-    parser.add_argument("--mode", choices=["extend", "replace"], default="extend", help="Whether to extend or replace real training samples.")
-    parser.add_argument("--label-column", type=str, default="finding_categories")
+    parser.add_argument("--label-column", type=str, default="breast_density")
 
     args = parser.parse_args()
 
@@ -99,6 +83,5 @@ if __name__ == "__main__":
         reference_csv=args.reference_csv,
         synth_annotation_csv=args.synth_annotation_csv,
         output_csv=args.output_csv,
-        mode=args.mode,
         label_column=args.label_column
     )
