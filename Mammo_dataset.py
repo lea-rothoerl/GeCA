@@ -57,7 +57,6 @@ class MammoDataset(Dataset):
         self.all_labels = sorted(list(set([label for sublist in self.label_dict.values() for label in sublist])))
         self.label_to_index = {label: idx for idx, label in enumerate(self.all_labels)}
 
-        # DEBUG 
         missing_files = self.annotations[self.annotations["resolved_path"].apply(lambda p: not os.path.exists(p))]
         if not missing_files.empty:
             print(f"Warning: {len(missing_files)} files listed in CSV not found on disk.")
@@ -70,15 +69,7 @@ class MammoDataset(Dataset):
         """Maps image IDs to their corresponding labels."""
         label_dict = {}
         for _, row in self.annotations.iterrows():
-            #image_id = row["image_id"]
-            # DEBUG
             image_id = Path(row["image_id"]).name
-
-
-            #labels = eval(row["finding_categories"]) 
-            
-            #if isinstance(labels, list) and len(labels) > 0:
-            #    label_dict[image_id] = labels
 
             raw_label = row.get(self.label_column)
 
@@ -93,9 +84,6 @@ class MammoDataset(Dataset):
                 labels = [str(raw_label)]
 
             label_dict[image_id] = labels
-            
-            # DEBUG
-            #print(label_dict[image_id])
             
         return label_dict
     

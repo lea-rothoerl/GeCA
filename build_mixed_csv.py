@@ -6,30 +6,23 @@ import random
 def build_mixed_csv(reference_csv, 
                     synth_annotation_csv, 
                     output_csv, 
-                    label_column="finding_categories"
-                    ):
+                    label_column="finding_categories",
+                    ratio=0.5):
 
     # load reference CSV
     ref_df = pd.read_csv(reference_csv)
-    # DEBUG
     print(f"Loaded reference CSV with {len(ref_df)} entries.")
 
     # load synthetic annotations
     synth_df = pd.read_csv(synth_annotation_csv)
     synth_df = synth_df.loc[:, ~synth_df.columns.str.contains('^Unnamed')]
-
-    # DEBUG
     print(f"Loaded synthetic annotation CSV with {len(synth_df)} entries.")
 
     synth_base_path = os.path.dirname(os.path.abspath(synth_annotation_csv))
-    # DEBUG
-    print(f"Synth base path: {synth_base_path}")
 
     # identify label columns
     known_cols = {"client_id", "filename", "patient_name", "multi_class_label"}
     label_cols = [col for col in synth_df.columns if col not in known_cols]
-    # DEBUG
-    print(f"Detected label columns: {label_cols}")
 
     # convert one-hot encoded labels to label name
     def get_label(row):
@@ -60,6 +53,18 @@ def build_mixed_csv(reference_csv,
         "fold": -1 
     })
 
+    # calculate number of synthetic samples based on ratio
+    num_real_images = len(ref_df)
+    num_synth_needed = int(num_real_images * ratio)
+
+    # verify number of images and sample
+    available_synth = len(synth_samples)
+    if num_synth_needed > available_synth:
+        print(f"WARNING: Requested {num_synth_needed} synthetic images, but only {available_synth} available.")
+        num_synth_needed = available_synth
+
+    synth_samples = synth_samples.sample(n=num_synth_needed, random_state=42)
+
     mixed_df = pd.concat([ref_df, synth_samples], ignore_index=True)
     print(f"Extended training set by {len(synth_samples)} synthetic samples.")
 
@@ -71,11 +76,12 @@ def build_mixed_csv(reference_csv,
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Create mixed CSV dataset combining real and synthetic images.")
+    parser = argparse.ArgumentParser()
     parser.add_argument("--reference-csv", required=True, help="Path to the reference CSV file with real images.")
     parser.add_argument("--synth-annotation-csv", required=True, help="Path to synthetic images annotation CSV.")
     parser.add_argument("--output-csv", required=True, help="Path to save the mixed CSV file.")
     parser.add_argument("--label-column", type=str, default="breast_density")
+    parser.add_argument("--ratio", type=float, default=0.5, help="Ratio of synthetic to real images in the mixed dataset.")
 
     args = parser.parse_args()
 
@@ -83,5 +89,6 @@ if __name__ == "__main__":
         reference_csv=args.reference_csv,
         synth_annotation_csv=args.synth_annotation_csv,
         output_csv=args.output_csv,
-        label_column=args.label_column
+        label_column=args.label_column,
+        ratio=args.ratio
     )
