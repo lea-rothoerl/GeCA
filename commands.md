@@ -179,3 +179,8 @@ CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -
 
 ### Evaluation
 python evaluate.py --fold 5 --image-size 128 --device_list cuda:0 --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MAS_MO.csv --gen /home/lea_urv/images/fullfield/synthetic/MAS_MO/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-128-vae-ema-cfg-1.5-seed-0/ --label-column model
+
+
+
+
+
