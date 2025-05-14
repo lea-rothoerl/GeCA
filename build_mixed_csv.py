@@ -7,7 +7,7 @@ def build_mixed_csv(reference_csv,
                     synth_annotation_csv, 
                     output_csv, 
                     label_column="finding_categories",
-                    ratio=0.5):
+                    ratio=None):
 
     # load reference CSV
     ref_df = pd.read_csv(reference_csv)
@@ -53,9 +53,12 @@ def build_mixed_csv(reference_csv,
         "fold": -1 
     })
 
-    # calculate number of synthetic samples based on ratio
-    num_real_images = len(ref_df)
-    num_synth_needed = int(num_real_images * ratio)
+    # calculate number of synthetic samples based on ratio if given
+    if ratio is None:
+        num_synth_needed = len(synth_samples)
+    else:
+        num_real_images = len(ref_df)
+        num_synth_needed = int(num_real_images * ratio)
 
     # verify number of images and sample
     available_synth = len(synth_samples)
@@ -81,7 +84,7 @@ if __name__ == "__main__":
     parser.add_argument("--synth-annotation-csv", required=True, help="Path to synthetic images annotation CSV.")
     parser.add_argument("--output-csv", required=True, help="Path to save the mixed CSV file.")
     parser.add_argument("--label-column", type=str, default="breast_density")
-    parser.add_argument("--ratio", type=float, default=0.5, help="Ratio of synthetic to real images in the mixed dataset.")
+    parser.add_argument("--ratio", type=float, default=None, help="Ratio of synthetic to real images in the mixed dataset. If none, all synthetic images will be used.")
 
     args = parser.parse_args()
 
