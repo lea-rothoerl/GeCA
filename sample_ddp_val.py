@@ -59,23 +59,35 @@ def create_npz_from_sample_folder(sample_dir, num=50_000):
     return npz_path
 
 class CustomDataset(Dataset):
-    def __init__(self, labels_dir, annot, label_column, mode, fold=0, multi_class=False):
-
+    def __init__(self, labels_dir, annot, label_column, mode, fold=0, multi_class=False, select_labels=None):
         self.datapath = Path(labels_dir)
+        self.mammo_dataset = MammoDataset(
+            root=labels_dir,
+            annotation_path=annot,
+            mode=mode,
+            transform=None,
+            label_column=label_column
+        )
 
-        self.mammo_dataset = MammoDataset(root=labels_dir, 
-                                          annotation_path=annot, 
-                                          mode=mode, 
-                                          transform=None,
-                                          label_column=label_column)
-        
         self.label = self.mammo_dataset.get_mapped_labels()
         self.all_labels = self.mammo_dataset.all_labels
+
+        if select_labels:
+            # Map selected label names to indices
+            label_indices = [self.all_labels.index(l) for l in select_labels]
+            # Keep only indices where any of the desired labels is active
+            selected_indices = [
+                i for i, lbl in enumerate(self.label)
+                if any(lbl[j] == 1 for j in label_indices)
+            ]
+            self.label = [self.label[i] for i in selected_indices]
+            self.indices = selected_indices
+        else:
+            self.indices = list(range(len(self.label)))
 
     def __getitem__(self, idx):
         label_file = self.label[idx] 
         label_array = np.array(label_file, dtype=np.float32)
-
         return 0, torch.from_numpy(label_array)
 
     def __len__(self):
@@ -159,12 +171,21 @@ def main(args):
                                 label_column=args.label_column#'finding_categories'
                                 )
     
-    dataset = CustomDataset(args.image_root, 
-                            args.annotation_path, 
-                            mode='val', 
-                            fold=args.fold,
-                            label_column=args.label_column#'finding_categories'
-                            )
+    if args.select_labels:
+        selected_labels = args.select_labels
+        missing = set(selected_labels) - set(temp_dataset.all_labels)
+        if missing:
+            raise ValueError(f"Selected labels not found in dataset labels: {missing}")
+        temp_dataset.all_labels = selected_labels
+
+    dataset = CustomDataset(
+        args.image_root, 
+        args.annotation_path, 
+        mode='val', 
+        fold=args.fold,
+        label_column=args.label_column,
+        select_labels=args.select_labels
+    )
     
     full_labels = temp_dataset.all_labels
     dataset.all_labels = temp_dataset.all_labels
@@ -254,7 +275,8 @@ def main(args):
     if rank == 0:
         # create_npz_from_sample_folder(sample_folder_dir, args.num_fid_samples)
         df = pd.DataFrame(dict_pd)
-        multi_label_list = df[full_labels].values
+        label_cols = selected_labels if args.select_labels else full_labels
+        multi_label_list = df[label_cols].values
         df['multi_class_label'] = get_new_labels(multi_label_list)
         df.to_csv(os.path.join(sample_folder_dir, f'val_syn_{args.fold}.csv'))
 
@@ -287,6 +309,9 @@ if __name__ == "__main__":
     parser.add_argument("--annotation-path", type=str, required=True)
     parser.add_argument("--fold", type=int, default=0)
     parser.add_argument("--label-column", type=str, default="finding_categories")
+    parser.add_argument("--select-labels", type=str, nargs='+', default=None, help="List of labels to sample on. If None, all labels used.")
+
+
     parser.add_argument("--expand_ratio", type=int, default=1)
     parser.add_argument("--image_space", action='store_true', default=False)
 
