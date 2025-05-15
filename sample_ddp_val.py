@@ -170,6 +170,9 @@ def main(args):
                                 transform=None,
                                 label_column=args.label_column#'finding_categories'
                                 )
+
+    full_labels = temp_dataset.all_labels
+    print(f"Full labels: {full_labels}")
     
     if args.select_labels:
         selected_labels = args.select_labels
@@ -186,29 +189,16 @@ def main(args):
         label_column=args.label_column,
         select_labels=args.select_labels
     )
-    
-    full_labels = temp_dataset.all_labels
+
+    #full_labels = temp_dataset.all_labels
     dataset.all_labels = temp_dataset.all_labels
     dataset.mammo_dataset.all_labels = temp_dataset.all_labels
     dataset.mammo_dataset.label_to_index = {label: idx for idx, label in enumerate(dataset.all_labels)}
     dataset.label = dataset.mammo_dataset.get_mapped_labels()
 
-    loader = DataLoader(
-        dataset,
-        batch_size=int(args.per_proc_batch_size),
-        shuffle=False,
-        num_workers=4,
-        pin_memory=True,
-        drop_last=False
-    )
-
-    total = 0
-    annotations = None
-    dict_pd = []
-
     def update_label(diction, labl):
         for name, label in zip(full_labels,
-                               labl):
+                            labl):
             diction[name] = int(label)
 
         return diction
@@ -219,56 +209,151 @@ def main(args):
         y_new = LabelEncoder().fit_transform(yy)
         return y_new
 
-    for _ in range(args.expand_ratio):
-        for _, labl in loader:
-            labl = labl.to(device).float()
-            labl = labl.squeeze(dim=1)  
+    if args.samples_per_label:
+        print(f"Generating {args.samples_per_label} samples per label...")
 
-            z = torch.randn(labl.size(0), model.in_channels, latent_size, latent_size, device=device)
+        target_labels = args.select_labels if args.select_labels else temp_dataset.all_labels
+        total = 0
+        dict_pd = []
 
-            # Setup classifier-free guidance:
-            if using_cfg:
-                z = torch.cat([z, z], 0)
-                y_null = torch.zeros_like(labl, device=device)
-                y = torch.cat([labl, y_null], 0)
-                model_kwargs = dict(y=y, cfg_scale=args.cfg_scale)
-                sample_fn = model.forward_with_cfg
-            else:
-                model_kwargs = dict(y=labl)
-                sample_fn = model.forward
+        target_labels = args.select_labels if args.select_labels else full_labels
 
-            if 'GeCA' in args.model:
-                model_kwargs['extras'] = model.seed(z, [latent_size, latent_size])
+        for label_name in target_labels:
+            label_index = full_labels.index(label_name)
+            print(f"Sampling {args.samples_per_label} images for label '{label_name}' (index {label_index})")
 
-            # Sample images:
-            samples = diffusion.p_sample_loop(
-                sample_fn, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=True, device=device
-            )
-            if using_cfg:
-                samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
+            # Create a one-hot vector of full length (4)
+            synthetic_label = torch.zeros(len(full_labels), device=device)
+            synthetic_label[label_index] = 1.0
 
-            if not args.image_space:
-                samples = vae.decode(samples / 0.18215).sample
-                samples = torch.clamp(127.5 * samples + 128.0, 0, 255).permute(0, 2, 3, 1).to("cpu", dtype=torch.uint8).numpy()
-            else:
-                samples = (samples + 1.0) * 0.5
-                samples = (samples * 255).to(device, dtype=torch.uint8)
+            # Repeat for batch
+            synthetic_label = synthetic_label.unsqueeze(0).repeat(args.per_proc_batch_size, 1)
 
-            label = labl.cpu().numpy()
-            annotations = label if annotations is None else np.concatenate([annotations, label], axis=0)
+            samples_needed = args.samples_per_label
+            while samples_needed > 0:
+                current_batch = min(args.per_proc_batch_size, samples_needed)
 
-            # Save samples to disk as individual .png files
-            for i, sample in enumerate(samples):
-                dict_client_img = {}
-                index = i * dist.get_world_size() + rank + total
-                dict_client_img['client_id'] = 'syn_' + str(index)
-                dict_client_img['filename'] = os.path.join('gen_samples_val', f"{index:06d}.png")
-                dict_client_img = update_label(dict_client_img, label[i])  
-                dict_client_img['patient_name'] = index
-                dict_pd.append(dict_client_img)
+                z = torch.randn(current_batch, model.in_channels, latent_size, latent_size, device=device)
 
-                Image.fromarray(sample).save(f"{sample_folder_dir}/gen_samples_val/{index:06d}.png")
-            total += global_batch_size
+                if using_cfg:
+                    z = torch.cat([z, z], 0)
+                    y_null = torch.zeros_like(synthetic_label[:current_batch], device=device)
+                    y = torch.cat([synthetic_label[:current_batch], y_null], 0)
+                    model_kwargs = dict(y=y, cfg_scale=args.cfg_scale)
+                    sample_fn = model.forward_with_cfg
+                else:
+                    model_kwargs = dict(y=synthetic_label[:current_batch])
+                    sample_fn = model.forward
+
+                if 'GeCA' in args.model:
+                    model_kwargs['extras'] = model.seed(z, [latent_size, latent_size])
+
+                samples = diffusion.p_sample_loop(
+                    sample_fn, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=True, device=device
+                )
+
+                if using_cfg:
+                    samples, _ = samples.chunk(2, dim=0)
+
+                if not args.image_space:
+                    samples = vae.decode(samples / 0.18215).sample
+                    samples = torch.clamp(127.5 * samples + 128.0, 0, 255).permute(0, 2, 3, 1).to("cpu", dtype=torch.uint8).numpy()
+                else:
+                    samples = (samples + 1.0) * 0.5
+                    samples = (samples * 255).to(device, dtype=torch.uint8)
+
+                label = synthetic_label[:current_batch].cpu().numpy()
+
+                for i, sample in enumerate(samples):
+                    dict_client_img = {}
+                    index = total * dist.get_world_size() + rank
+                    dict_client_img['client_id'] = 'syn_' + str(index)
+                    dict_client_img['filename'] = os.path.join('gen_samples_val', f"{index:06d}.png")
+                    dict_client_img = update_label(dict_client_img, label[i])
+                    dict_client_img['patient_name'] = index
+                    dict_pd.append(dict_client_img)
+
+                    Image.fromarray(sample).save(f"{sample_folder_dir}/gen_samples_val/{index:06d}.png")
+                    total += 1
+
+                samples_needed -= current_batch
+
+        dist.barrier()
+        if rank == 0:
+            df = pd.DataFrame(dict_pd)
+            label_cols = target_labels
+            multi_label_list = df[label_cols].values
+            df['multi_class_label'] = get_new_labels(multi_label_list)
+            df.to_csv(os.path.join(sample_folder_dir, f'syn_per_label_{args.fold}.csv'))
+            print("Done.")
+        dist.barrier()
+        dist.destroy_process_group()
+
+    else:
+        print(f"Generating samples based on validation dataset...")
+        loader = DataLoader(
+            dataset,
+            batch_size=int(args.per_proc_batch_size),
+            shuffle=False,
+            num_workers=4,
+            pin_memory=True,
+            drop_last=False
+        )
+
+        total = 0
+        annotations = None
+        dict_pd = []
+
+        for _ in range(args.expand_ratio):
+            for _, labl in loader:
+                labl = labl.to(device).float()
+                labl = labl.squeeze(dim=1)  
+
+                z = torch.randn(labl.size(0), model.in_channels, latent_size, latent_size, device=device)
+
+                # Setup classifier-free guidance:
+                if using_cfg:
+                    z = torch.cat([z, z], 0)
+                    y_null = torch.zeros_like(labl, device=device)
+                    y = torch.cat([labl, y_null], 0)
+                    model_kwargs = dict(y=y, cfg_scale=args.cfg_scale)
+                    sample_fn = model.forward_with_cfg
+                else:
+                    model_kwargs = dict(y=labl)
+                    sample_fn = model.forward
+
+                if 'GeCA' in args.model:
+                    model_kwargs['extras'] = model.seed(z, [latent_size, latent_size])
+
+                # Sample images:
+                samples = diffusion.p_sample_loop(
+                    sample_fn, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=True, device=device
+                )
+                if using_cfg:
+                    samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
+
+                if not args.image_space:
+                    samples = vae.decode(samples / 0.18215).sample
+                    samples = torch.clamp(127.5 * samples + 128.0, 0, 255).permute(0, 2, 3, 1).to("cpu", dtype=torch.uint8).numpy()
+                else:
+                    samples = (samples + 1.0) * 0.5
+                    samples = (samples * 255).to(device, dtype=torch.uint8)
+
+                label = labl.cpu().numpy()
+                annotations = label if annotations is None else np.concatenate([annotations, label], axis=0)
+
+                # Save samples to disk as individual .png files
+                for i, sample in enumerate(samples):
+                    dict_client_img = {}
+                    index = i * dist.get_world_size() + rank + total
+                    dict_client_img['client_id'] = 'syn_' + str(index)
+                    dict_client_img['filename'] = os.path.join('gen_samples_val', f"{index:06d}.png")
+                    dict_client_img = update_label(dict_client_img, label[i])  
+                    dict_client_img['patient_name'] = index
+                    dict_pd.append(dict_client_img)
+
+                    Image.fromarray(sample).save(f"{sample_folder_dir}/gen_samples_val/{index:06d}.png")
+                total += global_batch_size
 
     # Make sure all processes have finished saving their samples before attempting to convert to .npz
     dist.barrier()
@@ -310,6 +395,8 @@ if __name__ == "__main__":
     parser.add_argument("--fold", type=int, default=0)
     parser.add_argument("--label-column", type=str, default="finding_categories")
     parser.add_argument("--select-labels", type=str, nargs='+', default=None, help="List of labels to sample on. If None, all labels used.")
+    parser.add_argument("--samples-per-label", type=int, default=None, help="If set, generates this many samples per label, otherwise loops through val.")
+
 
 
     parser.add_argument("--expand_ratio", type=int, default=1)
@@ -318,3 +405,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     main(args)
+
+    if dist.is_initialized():
+        dist.barrier()
+        dist.destroy_process_group()
