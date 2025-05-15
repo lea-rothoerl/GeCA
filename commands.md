@@ -62,8 +62,13 @@ python evaluate.py --fold 5 --image-size 128 --device_list cuda:0 --image-root /
 #### Big Sampling 
 CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_DE.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/MA_DE/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/MA_DE_Syn/ --num-classes 4 --label-column breast_density --image-size 128 --expand_ratio 13
 
+#### Targeted Sampling
+CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_DE.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/MA_DE/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/MA_DE_TargSyn/ --num-classes 4 --label-column breast_density --image-size 128 --select-labels DENSITY\ A DENSITY\ B DENSITY\ D --samples-per-label 10000
+
 #### Mixed CSV Creation
 python /home/lea_urv/GeCA/build_mixed_csv.py --reference-csv /home/lea_urv/images/fullfield/MA_DE.csv --synth-annotation-csv /home/lea_urv/images/fullfield/synthetic/MA_DE_Syn/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-128-vae-ema-cfg-1.5-seed-0/val_syn_5.csv --output-csv /home/lea_urv/images/fullfield/MA_DE_Syn.csv 
+
+#### Targeted Mixed CSV Creation
 
 #### Reference
 python /home/lea_urv/GeCA/classify_cnn.py --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_DE.csv --label-column breast_density --epochs 25
@@ -98,14 +103,21 @@ python evaluate.py --fold 5 --image-size 128 --device_list cuda:0 --image-root /
 #### Big Sampling 
 CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/PL_DE.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/PL_DE/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/PL_DE_Syn/ --num-classes 4 --label-column breast_density --image-size 128 --expand_ratio 14
 
+#### Targeted Sampling
+CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/PL_DE.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/PL_DE/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/PL_DE_TargSyn/ --num-classes 4 --label-column breast_density --image-size 128 --select-labels DENSITY\ A DENSITY\ B DENSITY\ D --samples-per-label 2000
+
 #### Mixed CSV Creation
-python /home/lea_urv/GeCA/build_mixed_csv.py --reference-csv /home/lea_urv/images/fullfield/PL_DE.csv --synth-annotation-csv /home/lea_urv/images/fullfield/synthetic/PL_DE_Syn/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-128-vae-ema-cfg-1.5-seed-0/val_syn_5.csv --output-csv /home/lea_urv/images/fullfield/PL_DE_Syn.csv 
+python /home/lea_urv/GeCA/build_mixed_csv.py --reference-csv /home/lea_urv/images/fullfield/PL_DE.csv --synth-annotation-csv /home/lea_urv/images/fullfield/synthetic/PL_DE_Syn/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-128-vae-ema-cfg-1.5-seed-0/syn_per_label_5.csv --output-csv /home/lea_urv/images/fullfield/PL_DE_Syn.csv --ratio 0.5
+
+python /home/lea_urv/GeCA/build_mixed_csv.py --reference-csv /home/lea_urv/images/fullfield/PL_DE.csv --synth-annotation-csv /home/lea_urv/images/fullfield/synthetic/PL_DE_TargSyn/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-128-vae-ema-cfg-1.5-seed-0/val_syn_5.csv --output-csv /home/lea_urv/images/fullfield/PL_DE_TargSyn.csv
 
 #### Reference
 python /home/lea_urv/GeCA/classify_cnn.py --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/PL_DE.csv --label-column breast_density --epochs 25
 
 #### Test
 python /home/lea_urv/GeCA/classify_cnn.py --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/PL_DE_Syn.csv --label-column breast_density --epochs 25
+
+python /home/lea_urv/GeCA/classify_cnn.py --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/PL_DE_TargSyn.csv --label-column breast_density --epochs 25
 
 --------
 
@@ -130,6 +142,9 @@ python evaluate.py --fold 5 --image-size 128 --device_list cuda:0 --image-root /
 ### Classifier
 #### Big Sampling 
 CUDA_VISIBLE_DEVICES=1 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_PL_DE.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/MA_PL_DE/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/MA_PL_DE_Syn/ --num-classes 4 --label-column breast_density --image-size 128 --expand_ratio 13
+
+#### Targeted Sampling
+CUDA_VISIBLE_DEVICES=0 nice -n 10 torchrun --master-port $(shuf -i 30000-35000 -n 1) --nnodes=1 --nproc_per_node=1 sample_ddp_val.py --expand_ratio 1 --model GeCA-S --image-root /home/lea_urv/images/fullfield/png/ --annotation-path /home/lea_urv/images/fullfield/MA_PL_DE.csv --fold 5 --num-sampling-steps 250 --ckpt /home/lea_urv/images/fullfield/weights/MA_PL_DE/000-GeCA-S-5/checkpoints/best_ckpt.pt --sample-dir /home/lea_urv/images/fullfield/synthetic/MA_PL_DE_TargSyn/ --num-classes 4 --label-column breast_density --image-size 128 --select-labels DENSITY\ A DENSITY\ B DENSITY\ D --samples-per-label 10000
 
 #### Mixed CSV Creation
 python /home/lea_urv/GeCA/build_mixed_csv.py --reference-csv /home/lea_urv/images/fullfield/MA_PL_DE.csv --synth-annotation-csv /home/lea_urv/images/fullfield/synthetic/MA_PL_DE_Syn/GeCA-S-GS-fold-5-nstep-250-best_ckpt-size-128-vae-ema-cfg-1.5-seed-0/val_syn_5.csv --output-csv /home/lea_urv/images/fullfield/MA_PL_DE_Syn.csv 
