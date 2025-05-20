@@ -184,12 +184,12 @@ if __name__ == "__main__":
 
     # log report to wandb as a table
     wandb.log({"classification_report_table": wandb.Table(dataframe=report_df)})
+    # log macro F1 score
+    wandb.log({"macro_f1": f1})
 
     # map 4-class labels into binary groups: 0 (A+B), 1 (C+D)
     binary_targets = [0 if t in [0,1] else 1 for t in all_targets]
     binary_preds   = [0 if p in [0,1] else 1 for p in all_preds]
-
-    wandb.log({"macro_f1": f1})
 
     accuracy = accuracy_score(binary_targets, binary_preds)
     precision, recall, f1, _ = precision_recall_fscore_support(binary_targets, binary_preds, average="binary")
