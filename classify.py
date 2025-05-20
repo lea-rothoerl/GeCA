@@ -248,4 +248,3 @@ if __name__ == "__main__":
     all_preds = np.concatenate(all_preds)
     all_targets = np.concatenate(all_targets)
 
-    wandb.log({"macro_f1": f1})
