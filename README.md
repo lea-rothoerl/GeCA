@@ -30,7 +30,7 @@ This project explores the application of the GeCA framework for the synthesis of
 
 - The adapted GeCA model was generally capable of generating **perceptually realistic mammograms in a low-resolution setting**.
 - In breast density classification experiments, augmenting underrepresented density classes with synthetic images **improved macro F1-scores** — though effects on **binary metrics were ambivalent**.
-- These findings suggest the potential of GeCA-generated images for **dataset balancing** in classification tasks, warranting further exploration.
+- These findings imply the potential of GeCA-generated images for **dataset balancing** in classification tasks, warranting further exploration.
 
 ---
 
