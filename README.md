@@ -1,6 +1,9 @@
 # Advancing Mammographic Image Generation Using Generative Cellular Automata for Improved CAD Systems
 A Master Thesis by Lea Rothörl, Master Biomedical Data Science
 
+![MA_PL_FI](https://github.com/user-attachments/assets/b590ca55-6185-4e44-84ef-683154532f2a)
+
+
 This repository contains the code and experiments for my master thesis on mammographic image generation using Generative Cellular Automata (GeCA). This work builds substantially on the original [GeCA framework](https://github.com/xmed-lab/GeCA/) proposed by **Elbatel, Kamnitsas, and Li (2024)**.
 
 ---
@@ -28,14 +31,6 @@ This project explores the application of the GeCA framework for the synthesis of
 - The adapted GeCA model was generally capable of generating perceptually realistic mammograms.
 - In breast density classification experiments, augmenting underrepresented density classes with synthetic images improved macro F1-scores — though effects on binary metrics were ambivalent.
 - These findings suggest the potential of GeCA-generated images for dataset balancing in classification tasks, warranting further exploration.
-
----
-
-## Example Images
-
-**Generated Mammograms:**
-
-gotta find out how to put them here lol
 
 ---
 
